@@ -1,11 +1,19 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { ref, onValue, update, runTransaction, get, DataSnapshot, remove, set } from "firebase/database";
+import { ref, onValue, update, runTransaction, get, remove, set, DataSnapshot } from "firebase/database";
 import { db } from "../lib/firebase";
 
+/** Tipi */
 export type Victory = { targetName: string; pointsUsed: number };
-export type Player = { name: string; pointsUsed: number; victories: Victory[]; tempPoints: number };
+
+export type Player = {
+    name: string;
+    pointsUsed: number; // totale punti usati nelle vittorie
+    victories: Victory[];
+    tempPoints: number; // punti usati nella sessione corrente
+};
+
 export type PlayersMap = Record<string, Player>;
 
 export type GameContextType = {
@@ -44,31 +52,40 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [currentQuestion, setCurrentQuestion] = useState("Chi merita un punto?");
     const [lastVoterId, setLastVoterId] = useState<string | null>(null);
     const [maxPoints, setMaxPointsState] = useState(10);
-    const [sessionDuration, setSessionDuration] = useState(3000);
+    const [sessionDuration, setSessionDuration] = useState(3000); // default 3 secondi
 
     const expiryWatcherRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const victoryRegisteredRef = useRef(false); // gestisce vittoria unica per sessione
 
+    /** Parsing snapshot Firebase */
     const parsePlayersSnapshot = (snap: DataSnapshot): PlayersMap => {
-        const val = snap.val();
+        const val = snap.val() as Record<string, unknown>;
         if (!val || typeof val !== "object") return {};
         const out: PlayersMap = {};
         for (const key of Object.keys(val)) {
-            const item = val[key];
+            const item = val[key] as { name?: string; victories?: Victory[]; tempPoints?: number; pointsUsed?: number };
             if (item && typeof item.name === "string") {
                 const victories = Array.isArray(item.victories) ? item.victories : [];
-                const pointsUsed = victories.reduce((sum: any, v: any) => sum + (v.pointsUsed ?? 0), 0);
-                out[key] = { name: item.name, victories, pointsUsed, tempPoints: item.tempPoints ?? 0 };
+                const pointsUsed = victories.reduce((sum, v) => sum + (v.pointsUsed ?? 0), 0);
+                out[key] = {
+                    name: item.name,
+                    victories,
+                    pointsUsed,
+                    tempPoints: item.tempPoints ?? 0
+                };
             }
         }
         return out;
     };
 
+    /** Listener players */
     useEffect(() => {
         const r = ref(db, "game/players");
         const unsub = onValue(r, snap => setPlayers(parsePlayersSnapshot(snap)));
         return () => unsub();
     }, []);
 
+    /** Listener game meta */
     useEffect(() => {
         const r = ref(db, "game");
         const unsub = onValue(r, snap => {
@@ -83,136 +100,186 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => unsub();
     }, []);
 
+    /** Timer globale */
     useEffect(() => {
         if (expiryWatcherRef.current) clearTimeout(expiryWatcherRef.current);
         if (!sessionActive || !sessionTimerExpiresAt) return;
+
         const delta = sessionTimerExpiresAt - Date.now();
         if (delta <= 0) {
             update(ref(db, "game"), { sessionActive: false });
             return;
         }
+
         expiryWatcherRef.current = setTimeout(() => {
             update(ref(db, "game"), { sessionActive: false });
         }, delta);
+
         return () => { if (expiryWatcherRef.current) clearTimeout(expiryWatcherRef.current); };
     }, [sessionActive, sessionTimerExpiresAt]);
 
+    /** CRUD giocatore */
     const addPlayer = async (name: string) => {
-        await update(ref(db, `game/players/${name}`), { name, victories: [], tempPoints: 0, pointsUsed: 0 });
+        const newRef = ref(db, `game/players/${name}`);
+        await update(newRef, { name, victories: [], tempPoints: 0, pointsUsed: 0 });
     };
 
-    const deletePlayer = async (playerId: string) => await remove(ref(db, `game/players/${playerId}`));
+    const deletePlayer = async (playerId: string) => {
+        const playerRef = ref(db, `game/players/${playerId}`);
+        await remove(playerRef);
+    };
 
     const startSession = async (question?: string, durationSeconds?: number) => {
         const durationMs = (durationSeconds ?? (sessionDuration / 1000)) * 1000;
         const now = Date.now();
         const expiresAt = now + durationMs;
+
         await update(ref(db, "game"), {
             sessionActive: true,
             sessionTimerExpiresAt: expiresAt,
             currentQuestion: question ?? "Chi merita un punto?",
             lastVoterId: null,
-            sessionDuration: durationMs,
-            sessionHandled: false // flag atomico
+            sessionDuration: durationMs
         });
+
+        victoryRegisteredRef.current = false; // resetto la vittoria per nuova sessione
+
+        // Reset tempPoints a 0 per tutti i giocatori su state e Firebase
         setPlayers(prev => {
             const copy: PlayersMap = {};
-            for (const [id, p] of Object.entries(prev)) copy[id] = { ...p, tempPoints: 0 };
+            for (const [id, p] of Object.entries(prev)) {
+                copy[id] = { ...p, tempPoints: 0 };
+            }
             return copy;
         });
-        for (const id of Object.keys(players)) await update(ref(db, `game/players/${id}`), { tempPoints: 0 });
+
+        for (const id of Object.keys(players)) {
+            const playerRef = ref(db, `game/players/${id}`);
+            await update(playerRef, { tempPoints: 0 });
+        }
     };
 
-    const stopSession = async () => await update(ref(db, "game"), { sessionActive: false, sessionTimerExpiresAt: 0 });
+    const stopSession = async () => {
+        await update(ref(db, "game"), { sessionActive: false, sessionTimerExpiresAt: 0 });
+    };
 
+    /** Max punti globale */
     const setMaxPoints = async (points: number) => {
         setMaxPointsState(points);
         await update(ref(db, "game"), { maxPoints: points });
     };
 
-    const resetPlayerPoints = async (playerId: string) => await update(ref(db, `game/players/${playerId}`), { victories: [] });
+    /** Reset vittorie giocatore */
+    const resetPlayerPoints = async (playerId: string) => {
+        const playerRef = ref(db, `game/players/${playerId}`);
+        await update(playerRef, { victories: [] });
+    };
 
+    /** Handle buzzer click */
     const handleBuzzerClick = async (playerId: string) => {
         const playerRef = ref(db, `game/players/${playerId}`);
-        await runTransaction(playerRef, p => { if (!p) return p; p.tempPoints = (p.tempPoints ?? 0) + 1; return p; });
+
+        await runTransaction(playerRef, p => {
+            if (!p) return p;
+            p.tempPoints = (p.tempPoints ?? 0) + 1;
+            return p;
+        });
+
         const gameRef = ref(db, "game");
-        const snap = await get(gameRef);
-        const gameData = snap.val() || {};
         const now = Date.now();
-        const newExpiry = now + (gameData.sessionDuration ?? 3000);
+        const newExpiry = now + sessionDuration; // reset timer con durata scelta dal master
         await update(gameRef, { sessionTimerExpiresAt: newExpiry, lastVoterId: playerId });
     };
 
+    /** Registra vittoria */
     const registerVictory = async (winnerId: string, targetName: string, pointsUsed: number) => {
         const playerRef = ref(db, `game/players/${winnerId}/victories`);
-        await runTransaction(playerRef, current => { const arr = Array.isArray(current) ? current : []; arr.push({ targetName, pointsUsed }); return arr; });
+        await runTransaction(playerRef, current => {
+            const victories = Array.isArray(current) ? current : [];
+            victories.push({ targetName, pointsUsed });
+            return victories;
+        });
+
         const totalRef = ref(db, `game/players/${winnerId}`);
-        await runTransaction(totalRef, p => { if (!p) return p; p.pointsUsed = (p.pointsUsed ?? 0) + pointsUsed; return p; });
+        await runTransaction(totalRef, p => {
+            if (!p) return p;
+            p.pointsUsed = (p.pointsUsed ?? 0) + pointsUsed;
+            return p;
+        });
     };
 
     const deleteVictory = async (playerId: string, index: number) => {
         const playerRef = ref(db, `game/players/${playerId}/victories`);
         const snap = await get(playerRef);
-        const arr = Array.isArray(snap.val()) ? snap.val() : [];
-        if (arr[index] !== undefined) { arr.splice(index, 1); await set(playerRef, arr); }
-    };
-
-    const selectPlayerLocal = (playerId: string | null) => {
-        if (typeof window !== "undefined") playerId ? localStorage.setItem("selectedPlayerId", playerId) : localStorage.removeItem("selectedPlayerId");
-    };
-    const getSelectedPlayerId = () => typeof window !== "undefined" ? localStorage.getItem("selectedPlayerId") : null;
-
-    // --- LOGICA FINE SESSIONE ATOMICA ---
-    useEffect(() => {
-        if (!sessionActive) {
-            const handleVictory = async () => {
-                const gameRef = ref(db, "game/sessionHandled");
-                await runTransaction(gameRef, current => {
-                    if (current === true) return; // già gestito, esco
-                    return true; // segno che sto gestendo la vittoria
-                }).then(async (res) => {
-                    if (!res.committed) return; // se qualcun altro ha già scritto, esco
-
-                    // ora registriamo la vittoria
-                    const snap = await get(ref(db, "game"));
-                    const gameData = snap.val() || {};
-                    const allPlayers = Object.entries(players);
-                    if (!allPlayers.length) return;
-
-                    let maxTemp = -1;
-                    let winners: string[] = [];
-                    for (const [id, p] of allPlayers) {
-                        if ((p.tempPoints ?? 0) > maxTemp) { maxTemp = p.tempPoints ?? 0; winners = [id]; }
-                        else if ((p.tempPoints ?? 0) === maxTemp) winners.push(id);
-                    }
-                    if (winners.length === 1 && maxTemp > 0) await registerVictory(winners[0], gameData.currentQuestion ?? "?", maxTemp);
-                });
-            };
-            handleVictory();
+        const victories = Array.isArray(snap.val()) ? snap.val() : [];
+        if (victories[index] !== undefined) {
+            victories.splice(index, 1);
+            await set(playerRef, victories);
         }
-    }, [sessionActive, players]);
+    };
+
+    /** Local storage giocatore */
+    const selectPlayerLocal = (playerId: string | null) => {
+        if (typeof window !== "undefined") {
+            if (playerId) localStorage.setItem("selectedPlayerId", playerId);
+            else localStorage.removeItem("selectedPlayerId");
+        }
+    };
+    const getSelectedPlayerId = (): string | null => {
+        if (typeof window === "undefined") return null;
+        return localStorage.getItem("selectedPlayerId");
+    };
+
+    /** Calcolo vincitore fine sessione */
+    useEffect(() => {
+        if (!sessionActive && !victoryRegisteredRef.current) {
+            const allPlayers = Object.entries(players);
+            if (!allPlayers.length) return;
+
+            let maxTemp = -1;
+            let winners: string[] = [];
+
+            for (const [id, p] of allPlayers) {
+                if ((p.tempPoints ?? 0) > maxTemp) {
+                    maxTemp = p.tempPoints ?? 0;
+                    winners = [id];
+                } else if ((p.tempPoints ?? 0) === maxTemp) {
+                    winners.push(id);
+                }
+            }
+
+            // Registra vittoria solo se sessione finita, punti >0 e un singolo vincitore
+            if (winners.length === 1 && maxTemp > 0) {
+                registerVictory(winners[0], currentQuestion, maxTemp);
+            }
+
+            victoryRegisteredRef.current = true;
+        }
+    }, [sessionActive, players, currentQuestion]);
 
     return (
-        <GameContext.Provider value={{
-            players,
-            sessionActive,
-            sessionTimerExpiresAt,
-            sessionDuration,
-            currentQuestion,
-            lastVoterId,
-            maxPoints,
-            addPlayer,
-            deletePlayer,
-            startSession,
-            stopSession,
-            handleBuzzerClick,
-            resetPlayerPoints,
-            selectPlayerLocal,
-            getSelectedPlayerId,
-            setMaxPoints,
-            registerVictory,
-            deleteVictory
-        }}>
+        <GameContext.Provider
+            value={{
+                players,
+                sessionActive,
+                sessionTimerExpiresAt,
+                sessionDuration,
+                currentQuestion,
+                lastVoterId,
+                maxPoints,
+                addPlayer,
+                deletePlayer,
+                startSession,
+                stopSession,
+                handleBuzzerClick,
+                resetPlayerPoints,
+                selectPlayerLocal,
+                getSelectedPlayerId,
+                setMaxPoints,
+                registerVictory,
+                deleteVictory
+            }}
+        >
             {children}
         </GameContext.Provider>
     );
