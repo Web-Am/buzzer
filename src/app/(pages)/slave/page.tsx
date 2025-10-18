@@ -114,6 +114,16 @@ export default function SlavePage() {
 
     return (
         <div className="p-6 flex flex-col items-center min-h-screen space-y-6 bg-gray-50">
+            {/* Pulsante cambia giocatore */}
+            <div className="w-full max-w-md flex justify-end">
+                <button
+                    onClick={() => handleSelectPlayer(null)}
+                    className="px-3 py-1 rounded bg-indigo-200 hover:bg-indigo-300 text-sm font-medium"
+                >
+                    Cambia giocatore
+                </button>
+            </div>
+
             {/* Giocatore da votare */}
             {sessionActive && (
                 <div className="w-full max-w-md p-6 bg-yellow-100 rounded-xl shadow-md text-center">
@@ -128,6 +138,14 @@ export default function SlavePage() {
                 <div>Punti usati in questa sessione: {tempPoints}</div>
                 <div>Punti totali usati: {pointsUsed}</div>
                 <div>Punti disponibili: {pointsAvailable}</div>
+
+                {/* Mostra il giocatore in testa */}
+                {sessionActive && top && (
+                    <div className="mt-2 p-2 bg-indigo-100 rounded text-indigo-900 font-semibold">
+                        In testa: {top.playerName} con {top.points} punti
+                    </div>
+                )}
+
                 <button
                     className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
                     onClick={() => setShowVictories(!showVictories)}
@@ -144,6 +162,7 @@ export default function SlavePage() {
                     </ul>
                 )}
             </div>
+
 
             {/* Buzzer e timer */}
             {sessionActive && pointsAvailable > 0 && (
