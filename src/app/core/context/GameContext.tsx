@@ -144,14 +144,24 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             sessionDuration: durationMs
         });
 
-        // reset punti temporanei
+        // Reset punti temporanei a 0 per tutti i giocatori
         setPlayers(prev => {
             const copy: PlayersMap = {};
             for (const [id, p] of Object.entries(prev)) {
-                copy[id] = { ...p, tempPoints: 0 };
+                copy[id] = {
+                    ...p,
+                    tempPoints: 0,          // punti usati nella sessione corrente
+                    pointsUsed: 0           // reset totale sessione
+                };
             }
             return copy;
         });
+
+        // Se vuoi, puoi anche aggiornare Firebase in real-time per resettare pointsUsed
+        for (const [id] of Object.entries(players)) {
+            const playerRef = ref(db, `game/players/${id}`);
+            await update(playerRef, { pointsUsed: 0 });
+        }
     };
 
     const stopSession = async () => {
