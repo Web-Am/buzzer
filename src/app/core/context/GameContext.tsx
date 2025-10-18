@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { ref, onValue, update, runTransaction, get, DataSnapshot, remove } from "firebase/database";
+import { ref, onValue, update, runTransaction, get, DataSnapshot, remove, set } from "firebase/database";
 import { db } from "../lib/firebase";
 
 /** Tipi */
@@ -9,9 +9,9 @@ export type Victory = { targetName: string; pointsUsed: number };
 
 export type Player = {
     name: string;
-    pointsUsed: number; // totale punti usati nelle vittorie
+    pointsUsed: number;
     victories: Victory[];
-    tempPoints: number; // punti usati nella sessione corrente
+    tempPoints: number;
 };
 
 export type PlayersMap = Record<string, Player>;
@@ -19,6 +19,7 @@ export type PlayersMap = Record<string, Player>;
 export type GameContextType = {
     players: PlayersMap;
     sessionActive: boolean;
+    sessionHandled: boolean;
     sessionTimerExpiresAt: number;
     sessionDuration: number;
     currentQuestion: string;
@@ -48,11 +49,12 @@ export const useGame = (): GameContextType => {
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [players, setPlayers] = useState<PlayersMap>({});
     const [sessionActive, setSessionActive] = useState(false);
+    const [sessionHandled, setSessionHandled] = useState(false);
     const [sessionTimerExpiresAt, setSessionTimerExpiresAt] = useState(0);
     const [currentQuestion, setCurrentQuestion] = useState("Chi merita un punto?");
     const [lastVoterId, setLastVoterId] = useState<string | null>(null);
     const [maxPoints, setMaxPointsState] = useState(10);
-    const [sessionDuration, setSessionDuration] = useState(3000); // default 3 secondi
+    const [sessionDuration, setSessionDuration] = useState(3000);
 
     const expiryWatcherRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -70,7 +72,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     name: item.name,
                     victories,
                     pointsUsed,
-                    tempPoints: 0
+                    tempPoints: item.tempPoints ?? 0
                 };
             }
         }
@@ -97,6 +99,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLastVoterId(val.lastVoterId ?? null);
             setMaxPointsState(Number(val.maxPoints ?? 10));
             setSessionDuration(Number(val.sessionDuration ?? 3000));
+            setSessionHandled(Boolean(val.sessionHandled ?? false));
         });
         return () => unsub();
     }, []);
@@ -122,7 +125,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     /** CRUD giocatore */
     const addPlayer = async (name: string) => {
         const newRef = ref(db, `game/players/${name}`);
-        await update(newRef, { name, victories: [] });
+        await update(newRef, { name, victories: [], tempPoints: 0, pointsUsed: 0 });
     };
 
     const deletePlayer = async (playerId: string) => {
@@ -130,7 +133,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await remove(playerRef);
     };
 
-    /** Sessione */
     const startSession = async (question?: string, durationSeconds?: number) => {
         const durationMs = (durationSeconds ?? (sessionDuration / 1000)) * 1000;
         const now = Date.now();
@@ -141,61 +143,53 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             sessionTimerExpiresAt: expiresAt,
             currentQuestion: question ?? "Chi merita un punto?",
             lastVoterId: null,
-            sessionDuration: durationMs
+            sessionDuration: durationMs,
+            sessionHandled: false
         });
 
-        // Reset punti temporanei a 0 per tutti i giocatori
+        // Reset tempPoints a 0
         setPlayers(prev => {
             const copy: PlayersMap = {};
             for (const [id, p] of Object.entries(prev)) {
-                copy[id] = {
-                    ...p,
-                    tempPoints: 0,          // punti usati nella sessione corrente
-                    pointsUsed: 0           // reset totale sessione
-                };
+                copy[id] = { ...p, tempPoints: 0 };
             }
             return copy;
         });
 
-        // Se vuoi, puoi anche aggiornare Firebase in real-time per resettare pointsUsed
-        for (const [id] of Object.entries(players)) {
+        for (const id of Object.keys(players)) {
             const playerRef = ref(db, `game/players/${id}`);
-            await update(playerRef, { pointsUsed: 0 });
+            await update(playerRef, { tempPoints: 0 });
         }
     };
 
     const stopSession = async () => {
-        await update(ref(db, "game"), { sessionActive: false, sessionTimerExpiresAt: 0 });
+        await update(ref(db, "game"), { sessionActive: false });
     };
 
-    /** Max punti globale */
     const setMaxPoints = async (points: number) => {
         setMaxPointsState(points);
         await update(ref(db, "game"), { maxPoints: points });
     };
 
-    /** Reset vittorie giocatore */
     const resetPlayerPoints = async (playerId: string) => {
         const playerRef = ref(db, `game/players/${playerId}`);
         await update(playerRef, { victories: [] });
     };
 
-    /** Handle buzzer click */
     const handleBuzzerClick = async (playerId: string) => {
-        setPlayers(prev => {
-            const p = prev[playerId];
-            if (!p) return prev;
-            const tempPoints = (p.tempPoints ?? 0) + 1;
-            return { ...prev, [playerId]: { ...p, tempPoints } };
+        const playerRef = ref(db, `game/players/${playerId}`);
+        await runTransaction(playerRef, p => {
+            if (!p) return p;
+            p.tempPoints = (p.tempPoints ?? 0) + 1;
+            return p;
         });
 
-        const playerRef = ref(db, "game");
+        const gameRef = ref(db, "game");
         const now = Date.now();
         const newExpiry = now + 3000;
-        await update(playerRef, { sessionTimerExpiresAt: newExpiry, lastVoterId: playerId });
+        await update(gameRef, { sessionTimerExpiresAt: newExpiry, lastVoterId: playerId });
     };
 
-    /** Registra vittoria (solo vincitore) */
     const registerVictory = async (winnerId: string, targetName: string, pointsUsed: number) => {
         const playerRef = ref(db, `game/players/${winnerId}/victories`);
         await runTransaction(playerRef, current => {
@@ -203,20 +197,25 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             victories.push({ targetName, pointsUsed });
             return victories;
         });
+
+        const totalRef = ref(db, `game/players/${winnerId}`);
+        await runTransaction(totalRef, p => {
+            if (!p) return p;
+            p.pointsUsed = (p.pointsUsed ?? 0) + pointsUsed;
+            return p;
+        });
     };
 
-    /** Elimina singola vittoria */
     const deleteVictory = async (playerId: string, index: number) => {
         const playerRef = ref(db, `game/players/${playerId}/victories`);
         const snap = await get(playerRef);
         const victories = Array.isArray(snap.val()) ? snap.val() : [];
-        if (victories[index]) {
+        if (victories[index] !== undefined) {
             victories.splice(index, 1);
-            await update(playerRef, victories);
+            await set(playerRef, victories);
         }
     };
 
-    /** Local storage giocatore */
     const selectPlayerLocal = (playerId: string | null) => {
         if (typeof window !== "undefined") {
             if (playerId) localStorage.setItem("selectedPlayerId", playerId);
@@ -228,11 +227,39 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return localStorage.getItem("selectedPlayerId");
     };
 
+    /** Fine sessione: calcolo vincitore solo se sessionHandled = false */
+    useEffect(() => {
+        if (!sessionActive && !sessionHandled) {
+            const allPlayers = Object.entries(players);
+            if (!allPlayers.length) return;
+
+            let maxTemp = -1;
+            let winners: string[] = [];
+
+            for (const [id, p] of allPlayers) {
+                if ((p.tempPoints ?? 0) > maxTemp) {
+                    maxTemp = p.tempPoints ?? 0;
+                    winners = [id];
+                } else if ((p.tempPoints ?? 0) === maxTemp) {
+                    winners.push(id);
+                }
+            }
+
+            if (winners.length === 1 && maxTemp > 0) {
+                registerVictory(winners[0], currentQuestion, maxTemp);
+            }
+
+            // Aggiorno sessionHandled in Firebase
+            update(ref(db, "game"), { sessionHandled: true });
+        }
+    }, [sessionActive, players, currentQuestion, sessionHandled]);
+
     return (
         <GameContext.Provider
             value={{
                 players,
                 sessionActive,
+                sessionHandled,
                 sessionTimerExpiresAt,
                 sessionDuration,
                 currentQuestion,

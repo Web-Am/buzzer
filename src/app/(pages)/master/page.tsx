@@ -21,10 +21,8 @@ export default function MasterPage() {
     const [maxPointsInput, setMaxPointsInput] = useState(maxPoints);
     const [durationInput, setDurationInput] = useState(sessionDuration / 1000); // in secondi
 
-    // Sincronizza questionInput se cambia currentQuestion
-    useEffect(() => {
-        setQuestionInput(currentQuestion);
-    }, [currentQuestion]);
+    useEffect(() => setQuestionInput(currentQuestion), [currentQuestion]);
+    useEffect(() => setMaxPointsInput(maxPoints), [maxPoints]);
 
     const handleStart = async () => {
         if (!questionInput.trim()) return;
@@ -57,7 +55,6 @@ export default function MasterPage() {
         <div className="p-6 max-w-5xl mx-auto space-y-6">
             <h1 className="text-3xl font-bold mb-4">Master Buzzer</h1>
 
-            {/* Imposta giocatore da votare e durata */}
             <div className="flex flex-col sm:flex-row items-center gap-4">
                 <input
                     type="text"
@@ -88,7 +85,6 @@ export default function MasterPage() {
                 </button>
             </div>
 
-            {/* Imposta max punti */}
             <div className="card p-4 border rounded shadow-sm flex items-center gap-4 w-full md:w-64">
                 <label className="font-semibold">Max punti:</label>
                 <input
@@ -105,7 +101,6 @@ export default function MasterPage() {
                 </button>
             </div>
 
-            {/* Lista giocatori */}
             <div className="grid sm:grid-cols-2 gap-4">
                 {Object.entries(players).map(([id, p]) => {
                     const available = maxPoints - p.pointsUsed;
@@ -124,7 +119,6 @@ export default function MasterPage() {
                                 </button>
                             </div>
 
-                            {/* Storico vittorie */}
                             {p.victories.length > 0 && (
                                 <details className="mt-2 text-sm text-gray-700">
                                     <summary>Storico vittorie ({p.victories.length})</summary>
@@ -148,13 +142,11 @@ export default function MasterPage() {
                 })}
             </div>
 
-            {/* Aggiungi nuovo giocatore */}
             <AddPlayerForm />
         </div>
     );
 }
 
-/** Componente aggiungi giocatore */
 const AddPlayerForm: React.FC = () => {
     const { addPlayer } = useGame();
     const [name, setName] = useState("");
