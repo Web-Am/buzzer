@@ -20,12 +20,13 @@ type GameContextType = {
     players: PlayersMap;
     sessionActive: boolean;
     sessionTimerExpiresAt: number;
+    sessionDuration: number;
     currentQuestion: string;
     lastVoterId: string | null;
     maxPoints: number;
     addPlayer: (name: string) => Promise<void>;
     deletePlayer: (playerId: string) => Promise<void>;
-    startSession: (question?: string) => Promise<void>;
+    startSession: (question?: string, duration?: number) => Promise<void>;
     stopSession: () => Promise<void>;
     handleBuzzerClick: (playerId: string) => Promise<void>;
     resetPlayerPoints: (playerId: string) => Promise<void>;
@@ -51,6 +52,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [currentQuestion, setCurrentQuestion] = useState("Chi merita un punto?");
     const [lastVoterId, setLastVoterId] = useState<string | null>(null);
     const [maxPoints, setMaxPointsState] = useState(10);
+    const [sessionDuration, setSessionDuration] = useState(3000); // default 3s
 
     const expiryWatcherRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -128,9 +130,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     /** Start/Stop sessione */
-    const startSession = async (question?: string) => {
+    const startSession = async (question?: string, duration?: number) => {
         const now = Date.now();
-        const expiresAt = now + 3000; // default 3s
+        const expiresAt = now + (duration ?? sessionDuration);
         await update(ref(db, "game"), {
             sessionActive: true,
             sessionTimerExpiresAt: expiresAt,
@@ -216,6 +218,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             value={{
                 players,
                 sessionActive,
+                sessionDuration,
                 sessionTimerExpiresAt,
                 currentQuestion,
                 lastVoterId,

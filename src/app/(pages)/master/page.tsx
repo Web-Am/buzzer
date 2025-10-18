@@ -99,12 +99,13 @@ export default function MasterPage() {
 
             {/* Lista giocatori */}
             <div className="grid sm:grid-cols-2 gap-4">
-                {Object.entries(players).map(([id, p]) => (
-                    <div key={id} className="p-4 border rounded shadow flex flex-col justify-between">
+                {Object.entries(players).map(([id, p]) => {
+                    const available = maxPoints - p.pointsUsed;
+                    return <div key={id} className="p-4 border rounded shadow flex flex-col justify-between">
                         <div className="flex justify-between items-center">
                             <div>
                                 <div className="font-bold">{p.name}</div>
-                                <div>Usati: {p.pointsUsed} / Disponibili: {p.pointsAvailable}</div>
+                                <div>Usati: {p.pointsUsed} / Disponibili: {available}</div>
                             </div>
                             <button
                                 onClick={() => handleDeletePlayer(id)}
@@ -134,7 +135,8 @@ export default function MasterPage() {
                             </details>
                         )}
                     </div>
-                ))}
+                }
+                )}
             </div>
 
             {/* Aggiungi nuovo giocatore */}

@@ -26,7 +26,7 @@ export const PlayerList: React.FC<Props> = ({ players, onSelect, selectedId }) =
                         <div className="font-semibold">{p.name}</div>
                         <div className="text-xs text-gray-500">ID: {id}</div>
                     </div>
-                    <div className="text-xl font-bold">{p.points}</div>
+                    <div className="text-xl font-bold">{p.pointsUsed}</div>
                 </div>
             ))}
         </div>
