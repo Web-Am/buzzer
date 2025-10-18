@@ -214,12 +214,19 @@ export default function SlavePage() {
 
             {/* Popup vittoria/sconfitta */}
             {popup && (
-                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                    <div className={`p-6 rounded-xl text-2xl font-bold shadow-lg text-white ${popupColor}`}>
-                        {popup}
+                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+                    <div className={`p-6 rounded-xl text-2xl font-bold shadow-lg text-white ${popupColor} flex flex-col items-center space-y-4`}>
+                        <div>{popup}</div>
+                        <button
+                            onClick={() => setPopup(null)}
+                            className="px-4 py-2 bg-white text-gray-900 rounded-lg font-medium hover:bg-gray-200 transition"
+                        >
+                            Chiudi
+                        </button>
                     </div>
                 </div>
             )}
+
         </div>
     );
 }
