@@ -39,6 +39,7 @@ export default function RegisterPage() {
 
         const roomCode = await createRoom({ ...formData, timerCountdown: formData.timerCountdown * 1000 });
 
+        localStorage.setItem(`userEmail_${roomCode}`, formData.email);
         if (roomCode)
             router.push(`/master/${roomCode}`);
     };
