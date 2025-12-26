@@ -1,6 +1,6 @@
 "use client";
 
-import Header from '@/app/components/shared/header';
+import Header from '@/app/components/shared/Header';
 import { Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';

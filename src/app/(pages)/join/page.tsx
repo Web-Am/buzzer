@@ -71,6 +71,7 @@ export default function JoinPage() {
           name: formData.name,
           pointsTotal: room.settings.totalPoints,
           pointsUsed: 0,
+          isOnline: false,
           roundsWon: []
         };
 

@@ -5,10 +5,11 @@ import { useRoomStore } from '@/app/store/roomStore';
 import { useUIStore } from '@/app/store/uiStore';
 import { motion } from 'framer-motion';
 import { BarChart3, X } from 'lucide-react';
+import { useState } from 'react';
 
 export function StatsPopup() {
     const { room } = useRoomStore();
-    const { isStatsPopupOpen, setStatsPopupOpen } = useUIStore();
+    const [isStatsPopupOpen, setStatsPopupOpen] = useState(false);
     const { leaderboard } = useLeaderboard();
 
     if (!isStatsPopupOpen) {
