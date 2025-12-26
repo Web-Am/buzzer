@@ -25,6 +25,7 @@ export function useRoom(roomCode: string | null) {
                     if (data.participants) {
                         Object.keys(data.participants).forEach((key) => {
                             const p = data.participants[key] as Participant;
+
                             p.pointsUsed = calculatePointsUsed(p);
                         });
                     }

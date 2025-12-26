@@ -1,5 +1,7 @@
 // app/lib/game-logic.ts
 
+import { Participant } from "../types";
+
 export interface Press {
     userId: string;
     pointsUsed: number;
@@ -8,13 +10,6 @@ export interface Press {
     value: number;
 }
 
-export interface Participant {
-    email: string;
-    pointsTotal: number;
-    pointsUsed: number;
-    isOnline: boolean;
-    roundsWon?: Array<{ pointsAwarded: number }>;
-}
 
 export interface CanPressResult {
     canPress: boolean;

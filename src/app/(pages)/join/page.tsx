@@ -69,6 +69,7 @@ export default function JoinPage() {
       if (!room.participants?.[userKey]) {
         const participant: Participant = {
           name: formData.name,
+          email: formData.email,
           pointsTotal: room.settings.totalPoints,
           pointsUsed: 0,
           isOnline: false,

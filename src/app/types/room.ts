@@ -20,6 +20,7 @@ export interface RoundWon {
 
 export interface Participant {
     name: string;
+    email: string;
     isOnline: boolean;
     pointsTotal: number;
     pointsUsed: number;
