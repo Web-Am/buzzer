@@ -10,7 +10,6 @@ export interface Press {
 
 export interface Round {
     questionText: string;
-    maxPoints: number;
     status: RoundStatus;
     startTs: number;
     endTs?: number;

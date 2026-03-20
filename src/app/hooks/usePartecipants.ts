@@ -60,6 +60,6 @@ export function useLeaderboard() {
     return { leaderboard };
 }
 
-function calculateAvailablePoints(participant: Participant): any {
-    return -1;
+function calculateAvailablePoints(participant: Participant): number {
+    return participant.pointsTotal - (participant.pointsUsed || 0);
 }

@@ -13,8 +13,18 @@ export function useBuzzer(roomCode: string) {
         async (bonus: number = 1) => {
             if (!userKey || !room?.currentRound) return;
 
+            // Valida bonus
+            if (![1, 5, 10, 20].includes(bonus)) {
+                alert('Bonus non valido');
+                return;
+            }
+
             const roundRef = ref(db, `rooms/${roomCode}/currentRound`);
             const participantRef = ref(db, `rooms/${roomCode}/participants/${userKey}`);
+
+            // Calcola requiredPoints con dati attuali
+            const presses = room.currentRound.presses || {};
+            const requiredPoints = calculateRequiredPoints(presses, bonus);
 
             try {
                 await runTransaction(roundRef, (currentRound) => {
@@ -25,12 +35,9 @@ export function useBuzzer(roomCode: string) {
                         throw new Error('Round già terminato');
                     }
 
-                    const presses = currentRound.presses || {};
-                    const requiredPoints = calculateRequiredPoints(presses, bonus);
-
-                    // Verifica punti disponibili
+                    // Verifica punti disponibili (usando dati attuali)
                     const participant = room.participants[userKey];
-                    const pointsAvailable = participant.pointsTotal - participant.pointsUsed;
+                    const pointsAvailable = participant.pointsTotal - (participant.pointsUsed || 0);
 
                     if (pointsAvailable < requiredPoints) {
                         throw new Error(`Punti insufficienti. Servono ${requiredPoints}, ne hai ${pointsAvailable}`);
@@ -45,18 +52,12 @@ export function useBuzzer(roomCode: string) {
                         value: bonus
                     };
 
-                    // RESET DEL TIMER: ricalcola startTs e endTs
-                    const timerMs = currentRound.timerMs;
-                    const now = Date.now();
-
                     return {
                         ...currentRound,
                         presses: {
-                            ...presses,
+                            ...currentRound.presses,
                             [userKey]: newPress
-                        },
-                        startTs: now,
-                        endTs: now + timerMs
+                        }
                     };
                 });
 
@@ -64,12 +65,9 @@ export function useBuzzer(roomCode: string) {
                 await runTransaction(participantRef, (participant) => {
                     if (!participant) return participant;
 
-                    const presses = room.currentRound?.presses || {};
-                    const requiredPoints = calculateRequiredPoints(presses, bonus);
-
                     return {
                         ...participant,
-                        pointsUsed: requiredPoints,
+                        pointsUsed: (participant.pointsUsed || 0) + requiredPoints,
                         updatedAt: Date.now()
                     };
                 });

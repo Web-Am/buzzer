@@ -1,13 +1,16 @@
 'use client';
 
+import { useTimer } from '@/app/hooks/useTimer';
 import { ConnectionStatus } from '@/app/components/shared/ConnectionStatus';
 import Header from '@/app/components/shared/Header';
 import { Buzzer } from '@/app/components/slave/Buzzer';
 import { MiniBuzzer } from '@/app/components/slave/MiniBuzzer';
 import { QuestionDisplay } from '@/app/components/slave/QuestionDisplay';
 import { WinnerModal } from '@/app/components/slave/WinnerModal';
+import { UserDropdown } from '@/app/components/shared/UserDropdown';
 import { Card } from '@/app/components/ui/Card';
 import { Timer } from '@/app/components/ui/Timer';
+import { ParticipantsTable } from '@/app/components/master/PartecipantsTable';
 import { useBuzzer } from '@/app/hooks/useBuzzer';
 import { usePageLeave } from '@/app/hooks/useLeave';
 import { useRoom } from '@/app/hooks/useRoom';
@@ -26,6 +29,17 @@ export default function SlavePage() {
     const { press } = useBuzzer(roomCode);
     const { loading } = useRoom(roomCode);
     const { room, setRoomCode, setRole, userKey, setUserKey } = useRoomStore();
+
+    const currentRound = room?.currentRound ?? null;
+    const { remaining: timerRemaining } = useTimer(
+        currentRound?.startTs ?? null,
+        currentRound?.timerMs ?? null
+    );
+
+    const handleLogout = () => {
+        localStorage.removeItem(`userEmail_${roomCode}`);
+        router.push('/');
+    };
 
     const SyncStatusOnline = async (online: boolean) => {
         if (!userKey) return;
@@ -121,79 +135,107 @@ export default function SlavePage() {
     const { round, participant, canPressButtons, costs, currentWinner, isActive } = gameState;
     const pointsUsed = participant?.pointsUsed ?? 0;
     const pointsAvail = participant ? participant.pointsTotal - pointsUsed : 0;
+    const roundPointsUsed = round?.presses?.[userKey]?.pointsUsed ?? 0;
 
     const isWinner = currentWinner?.userId === userKey;
+    const participantName = participant?.name || 'Partecipante';
 
     return (
         <>
             <Header />
             <div className="min-h-screen bg-gray-50">
                 <ConnectionStatus />
-                <main className="container mx-auto px-4 py-8 space-y-6">
-                    <header className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-xl font-bold">Stanza {roomCode}</h1>
-                            <p className="text-sm text-gray-500">
-                                Punti disponibili: <span className="font-semibold">{pointsAvail}</span>
-                            </p>
+                <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
+                    {/* Header con info utente e codice stanza */}
+                    <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div>
+                                <h1 className="text-xl font-bold text-gray-900">Partecipante</h1>
+                                <div className="flex flex-wrap gap-4 text-sm text-gray-600 mt-1">
+                                    <span>💰 Disponibili: <strong className="text-green-600">{pointsAvail}</strong></span>
+                                    {isActive && roundPointsUsed > 0 && (
+                                        <span>🎯 Usati questo round: <strong className="text-orange-600">{roundPointsUsed}</strong></span>
+                                    )}
+                                    {currentWinner && (
+                                        <span>🏆 Vincitore attuale: <strong className="text-blue-600">{currentWinner.pointsUsed} punti</strong></span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                                Stanza: {roomCode}
+                            </div>
+                            <UserDropdown
+                                name={participantName}
+                                email={userKey}
+                                onLogout={handleLogout}
+                            />
                         </div>
                     </header>
 
-                    <Card className="flex flex-col items-center gap-6">
-                        <QuestionDisplay round={round} />
+                    {/* Game Area */}
+                    <Card className="p-6">
+                        <div className="flex flex-col items-center gap-6">
+                            <QuestionDisplay round={round} />
 
-                        {round && isActive && (
-                            <Timer
-                                remainingMs={Math.max(0, Number(round.startTs) + round.timerMs - Date.now())}
-                                totalMs={round.timerMs}
-                            />
-                        )}
-
-                        {isWinner && (
-                            <div className="rounded-lg bg-green-100 px-4 py-2 text-green-800 font-semibold">
-                                🏆 Sei il vincitore attuale!
-                            </div>
-                        )}
-
-                        {currentWinner && !isWinner && (
-                            <div className="text-sm text-gray-600">
-                                Vincitore attuale: {currentWinner.userId.split('_dot_')[0]} ({currentWinner.pointsUsed} punti)
-                            </div>
-                        )}
-
-                        <div className="flex flex-col items-center gap-4">
-                            <Buzzer
-                                disabled={!round || !isActive || !canPressButtons.base.canPress}
-                                label={costs.base.toString()}
-                                onPress={() => press(1)}
-                            />
-                            {!canPressButtons.base.canPress && (
-                                <p className="text-xs text-red-500">
-                                    {canPressButtons.base.reason ?? 'Non puoi premere ora.'}
-                                </p>
+                            {round && isActive && (
+                                <Timer
+                                    remainingMs={timerRemaining}
+                                    totalMs={round.timerMs}
+                                />
                             )}
 
-                            <div className="flex gap-2">
-                                <MiniBuzzer
-                                    bonus={5}
-                                    disabled={!round || !isActive || !canPressButtons.bonus5.canPress}
-                                    cost={costs.bonus5}
-                                    onPress={() => press(5)}
-                                />
-                                <MiniBuzzer
-                                    bonus={10}
-                                    disabled={!round || !isActive || !canPressButtons.bonus10.canPress}
-                                    cost={costs.bonus10}
-                                    onPress={() => press(10)}
-                                />
-                                <MiniBuzzer
-                                    bonus={20}
-                                    disabled={!round || !isActive || !canPressButtons.bonus20.canPress}
-                                    cost={costs.bonus20}
-                                    onPress={() => press(20)}
-                                />
+                            {isWinner && (
+                                <div className="rounded-lg bg-green-100 px-6 py-3 text-green-800 font-semibold text-center animate-pulse">
+                                    🏆 Sei il vincitore attuale!
+                                </div>
+                            )}
+
+                            {/* Buzzer principale */}
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="relative">
+                                    <Buzzer
+                                        disabled={!round || !isActive || !canPressButtons.base.canPress}
+                                        label={costs.base.toString()}
+                                        onPress={() => press(1)}
+                                    />
+                                    {!canPressButtons.base.canPress && (
+                                        <p className="text-xs text-red-500 text-center mt-2 max-w-xs">
+                                            {canPressButtons.base.reason ?? 'Non puoi premere ora.'}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Buzzer bonus */}
+                                <div className="flex gap-3 flex-wrap justify-center">
+                                    <MiniBuzzer
+                                        bonus={5}
+                                        disabled={!round || !isActive || !canPressButtons.bonus5.canPress}
+                                        cost={costs.bonus5}
+                                        onPress={() => press(5)}
+                                    />
+                                    <MiniBuzzer
+                                        bonus={10}
+                                        disabled={!round || !isActive || !canPressButtons.bonus10.canPress}
+                                        cost={costs.bonus10}
+                                        onPress={() => press(10)}
+                                    />
+                                    <MiniBuzzer
+                                        bonus={20}
+                                        disabled={!round || !isActive || !canPressButtons.bonus20.canPress}
+                                        cost={costs.bonus20}
+                                        onPress={() => press(20)}
+                                    />
+                                </div>
                             </div>
                         </div>
+                    </Card>
+
+                    {/* Tabella Partecipanti */}
+                    <Card className="p-6">
+                        <h3 className="text-lg font-semibold mb-4 text-gray-900">Partecipanti</h3>
+                        <ParticipantsTable room={room} />
                     </Card>
 
                     <WinnerModal room={room} />

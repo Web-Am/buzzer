@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { onValue, off } from 'firebase/database';
 import { roomRef } from '../lib/firebase-utils';
-import { calculatePointsUsed } from '../lib/game-logic';
 import { useRoomStore } from '../store/roomStore';
 import { Room, Participant } from '../types';
 
@@ -25,8 +24,16 @@ export function useRoom(roomCode: string | null) {
                     if (data.participants) {
                         Object.keys(data.participants).forEach((key) => {
                             const p = data.participants[key] as Participant;
-
-                            p.pointsUsed = calculatePointsUsed(p);
+                            // Ricalcola pointsUsed basato su roundsWon
+                            if (p.roundsWon && p.roundsWon.length > 0) {
+                                const totalSpent = p.roundsWon.reduce((sum, round) => {
+                                    // Ogni round rappresenta una spesa (pointsAwarded è ciò che hai speso per vincere)
+                                    return sum + (round.pointsAwarded || 0);
+                                }, 0);
+                                p.pointsUsed = totalSpent;
+                            } else {
+                                p.pointsUsed = p.pointsUsed || 0;
+                            }
                         });
                     }
 

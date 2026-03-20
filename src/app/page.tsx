@@ -32,8 +32,7 @@ function FeatureCard({ feature, index }: { feature: (typeof features)[number]; i
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-md transition-all duration-300 hover:border-primary-300 hover:shadow-xl"
-    >
+      className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-md transition-all duration-300 hover:border-primary-300 hover:shadow-xl"  >
       <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary-50 transition-colors group-hover:bg-primary-100">
         <Icon className="text-primary-600 transition-transform group-hover:scale-110" size={24} />
       </div>

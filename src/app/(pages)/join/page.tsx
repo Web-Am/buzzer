@@ -19,7 +19,7 @@ export default function JoinPage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ roomCode: 'KAGFCJ', name: 'marco', email: 'andrea.air14@gmail.com' });
+  const [formData, setFormData] = useState({ roomCode: '91EWSL', name: 'marco', email: 'andrea.air14@gmail.com' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

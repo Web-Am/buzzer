@@ -28,17 +28,6 @@ export function generateRoomCode(length = 6): string {
     return code;
 }
 
-/**
- * Determina il vincitore in base al primo che ha premuto (logica originale per fine round)
- */
-export function determineWinner(presses: Record<string, Press>): string | null {
-    const keys = Object.keys(presses);
-    if (keys.length === 0) return null;
-
-    const sorted = Object.values(presses).sort((a, b) => a.serverTs - b.serverTs);
-    return sorted[0].userId;
-}
-
 export function calculatePointsUsed(participant: Participant): number {
     if (!participant.roundsWon?.length) return 0;
     return participant.roundsWon.reduce((sum, r) => sum + r.pointsAwarded, 0);
@@ -60,11 +49,13 @@ export function getCurrentWinner(presses: Record<string, Press>): { userId: stri
 
     let maxPoints = 0;
     let winnerId = '';
+    let earliestTs = Infinity;
 
     Object.entries(presses).forEach(([userId, press]) => {
-        if (press.pointsUsed > maxPoints) {
+        if (press.pointsUsed > maxPoints || (press.pointsUsed === maxPoints && press.serverTs < earliestTs)) {
             maxPoints = press.pointsUsed;
             winnerId = userId;
+            earliestTs = press.serverTs;
         }
     });
 

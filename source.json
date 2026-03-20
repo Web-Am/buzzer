@@ -1,0 +1,70 @@
+{
+  "masters": {
+    "andrea_dot_air144@gmail_dot_com": {
+      "name": "andrea",
+      "room": "91EWSL",
+      "updatedAt": 1773947906992
+    }
+  },
+  "rooms": {
+    "91EWSL": {
+      "createdAt": 1773947906992,
+      "currentRound": {
+        "endTs": 1774027542842,
+        "presses": {
+          "andrea_dot_air14@gmail_dot_com": {
+            "pointsUsed": 1,
+            "serverTs": 1774027533804,
+            "targetText": "BUZZ",
+            "userId": "andrea_dot_air14@gmail_dot_com",
+            "value": 1
+          }
+        },
+        "questionText": "lol",
+        "startTs": 1774027532832,
+        "status": "FINISHED",
+        "timerMs": 10000,
+        "winner": "andrea_dot_air14@gmail_dot_com",
+        "winnerPoints": 1
+      },
+      "masterEmail": "andrea_dot_air144@gmail_dot_com",
+      "participants": {
+        "andrea_dot_air10@gmail_dot_com": {
+          "email": "andrea.air10@gmail.com",
+          "isOnline": false,
+          "name": "marco",
+          "pointsTotal": 300,
+          "pointsUsed": 1,
+          "roundsWon": [
+            {
+              "pointsAwarded": 0,
+              "questionText": "michela",
+              "timestamp": 1773948105100
+            }
+          ],
+          "updatedAt": 1773949112395
+        },
+        "andrea_dot_air14@gmail_dot_com": {
+          "email": "andrea.air14@gmail.com",
+          "isOnline": true,
+          "name": "marco",
+          "pointsTotal": 301,
+          "pointsUsed": 1,
+          "roundsWon": [
+            {
+              "pointsAwarded": 1,
+              "questionText": "lol",
+              "timestamp": 1774027542842
+            }
+          ],
+          "updatedAt": 1774027533841
+        }
+      },
+      "settings": {
+        "timerCountdown": 10000,
+        "totalPoints": 300
+      },
+      "updatedAt": 1774027542842
+    }
+  }
+}

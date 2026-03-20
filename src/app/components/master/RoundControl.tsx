@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/app/lib/firebase';
 import { Room, Round } from '@/app/types';
+import { getCurrentWinner } from '@/app/lib/game-logic';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
@@ -90,7 +91,6 @@ export function RoundControl({ roomCode, room }: Props) {
 
         const newRound: Round = {
             questionText,
-            maxPoints: 0,
             status: 'IN_PROGRESS',
             startTs: Date.now(),
             timerMs: room.settings.timerCountdown,
@@ -113,10 +113,7 @@ export function RoundControl({ roomCode, room }: Props) {
         if (!round) return;
 
         const presses = round.presses ?? {};
-        const entries = Object.values(presses).sort(
-            (a: any, b: any) => a.serverTs - b.serverTs
-        );
-        const winner = entries[0]?.userId;
+        const winner = getCurrentWinner(presses);
 
         const updates: Record<string, any> = {
             'currentRound/status': 'FINISHED',
@@ -125,18 +122,20 @@ export function RoundControl({ roomCode, room }: Props) {
         };
 
         if (winner) {
-            const participant = room.participants[winner];
+            const participant = room.participants[winner.userId];
             if (participant) {
-                updates['currentRound/winner'] = winner;
-                updates['currentRound/winnerPoints'] = round.maxPoints;
-                updates[`participants/${winner}/roundsWon`] = [
+                updates['currentRound/winner'] = winner.userId;
+                updates['currentRound/winnerPoints'] = winner.pointsUsed;
+                updates[`participants/${winner.userId}/roundsWon`] = [
                     ...(participant.roundsWon ?? []),
                     {
                         questionText: round.questionText,
-                        pointsAwarded: round.maxPoints,
+                        pointsAwarded: winner.pointsUsed,
                         timestamp: Date.now()
                     }
                 ];
+                // Il vincitore recupera i punti spesi
+                updates[`participants/${winner.userId}/pointsTotal`] = participant.pointsTotal + winner.pointsUsed;
             }
         }
 
