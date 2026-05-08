@@ -23,9 +23,6 @@ export function RoundControl({ roomCode, room }: Props) {
 
     const currentRound = room.currentRound;
 
-    /* ---------------------------------------------
-       LISTENER REALTIME + TIMER SYNC
-    --------------------------------------------- */
     useEffect(() => {
         if (!roomCode) return;
 
@@ -56,7 +53,7 @@ export function RoundControl({ roomCode, room }: Props) {
             stopTimer();
             setIsRunning(true);
             tick();
-            intervalRef.current = setInterval(tick, 50); // refresh veloce per ms
+            intervalRef.current = setInterval(tick, 50);
         });
 
         return () => {
@@ -73,9 +70,7 @@ export function RoundControl({ roomCode, room }: Props) {
         setIsRunning(false);
     };
 
-    /* ---------------------------------------------
-       AUTO FINE ROUND (SOLO MASTER)
-    --------------------------------------------- */
+    // Auto-finish when timer reaches 0
     useEffect(() => {
         if (timeLeftMs === null || timeLeftMs > 0) return;
         if (room.currentRound?.status !== 'IN_PROGRESS') return;
@@ -83,9 +78,6 @@ export function RoundControl({ roomCode, room }: Props) {
         finishRound();
     }, [timeLeftMs]);
 
-    /* ---------------------------------------------
-       START ROUND
-    --------------------------------------------- */
     const startRound = async () => {
         if (!questionText.trim()) return;
 
@@ -105,9 +97,6 @@ export function RoundControl({ roomCode, room }: Props) {
         setQuestionText('');
     };
 
-    /* ---------------------------------------------
-       FINISH ROUND
-    --------------------------------------------- */
     const finishRound = async () => {
         const round = room.currentRound;
         if (!round) return;
@@ -122,29 +111,30 @@ export function RoundControl({ roomCode, room }: Props) {
         };
 
         if (winner) {
-            const participant = room.participants[winner.userId];
-            if (participant) {
-                updates['currentRound/winner'] = winner.userId;
-                updates['currentRound/winnerPoints'] = winner.pointsUsed;
+            updates['currentRound/winner'] = winner.userId;
+            updates['currentRound/winnerPoints'] = winner.cumulativeBid;
+
+            // Save winner in roundsWon history
+            const winnerParticipant = room.participants?.[winner.userId];
+            if (winnerParticipant) {
                 updates[`participants/${winner.userId}/roundsWon`] = [
-                    ...(participant.roundsWon ?? []),
+                    ...(winnerParticipant.roundsWon ?? []),
                     {
                         questionText: round.questionText,
-                        pointsAwarded: winner.pointsUsed,
+                        pointsAwarded: winner.cumulativeBid,
                         timestamp: Date.now()
                     }
                 ];
-                // Il vincitore recupera i punti spesi
-                updates[`participants/${winner.userId}/pointsTotal`] = participant.pointsTotal + winner.pointsUsed;
+
+                // Only the winner loses points
+                const newPointsUsed = (winnerParticipant.pointsUsed || 0) + winner.cumulativeBid;
+                updates[`participants/${winner.userId}/pointsUsed`] = newPointsUsed;
             }
         }
 
         await update(ref(db, `rooms/${roomCode}`), updates);
     };
 
-    /* ---------------------------------------------
-       RESET ROUND (RICOMINCIA)
-    --------------------------------------------- */
     const resetRound = async () => {
         await update(ref(db, `rooms/${roomCode}`), {
             currentRound: null,
@@ -156,9 +146,6 @@ export function RoundControl({ roomCode, room }: Props) {
         setIsRunning(false);
     };
 
-    /* ---------------------------------------------
-       FORMAT TIMER (mm:ss.mmm)
-    --------------------------------------------- */
     const formatTime = (ms: number) => {
         const totalSeconds = Math.floor(ms / 1000);
         const minutes = Math.floor(totalSeconds / 60);
@@ -170,13 +157,14 @@ export function RoundControl({ roomCode, room }: Props) {
             .padStart(2, '0')}.${millis.toString().padStart(3, '0')}`;
     };
 
-    /* ---------------------------------------------
-       UI
-    --------------------------------------------- */
     if (!currentRound) {
         return (
             <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Nuovo Round</h3>
+                <p className="text-sm text-gray-500">
+                    Scrivi la domanda (solitamente un nome) e avvia il round.
+                    I partecipanti hanno {room.settings.timerCountdown / 1000} secondi per votare.
+                </p>
                 <Input
                     label="Domanda"
                     value={questionText}
@@ -207,7 +195,7 @@ export function RoundControl({ roomCode, room }: Props) {
 
                 {isRunning && timeLeftMs !== null && (
                     <span
-                        className={`font-mono text-xl font-bold ${timeLeftMs <= 5000 ? 'text-red-600' : ''
+                        className={`font-mono text-xl font-bold ${timeLeftMs <= 3000 ? 'text-red-600' : ''
                             }`}
                     >
                         {formatTime(timeLeftMs)}
@@ -215,7 +203,6 @@ export function RoundControl({ roomCode, room }: Props) {
                 )}
             </div>
 
-            {/* BOTTONI */}
             {currentRound.status === 'IN_PROGRESS' && (
                 <Button variant="secondary" onClick={finishRound}>
                     Chiudi Round
@@ -224,7 +211,7 @@ export function RoundControl({ roomCode, room }: Props) {
 
             {currentRound.status === 'FINISHED' && (
                 <Button onClick={resetRound}>
-                    Ricomincia Round
+                    Nuovo Round
                 </Button>
             )}
         </div>

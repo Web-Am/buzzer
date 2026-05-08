@@ -11,19 +11,29 @@ export function useCreateRoom() {
 
     const { setIsCreatingRoom } = useUIStore();
 
-    async function createRoom(data: { name: string; email: string; totalPoints: number; timerCountdown: number; }): Promise<string | null> {
+    async function createRoom(data: { name: string; email: string; totalPoints: number; timerCountdown: number; roomName: string; }): Promise<string | null> {
 
         setIsCreatingRoom(true);
 
         try {
             const masterEmailKey = sanitizeEmailKey(data.email);
 
-            // 🔍 Controllo se esiste già un master
             const masterRef = ref(db, `masters/${masterEmailKey}`);
             const masterSnap = await get(masterRef);
 
             if (masterSnap.exists()) {
                 return masterSnap.val().room;
+            }
+
+            // Se l'email è già registrata come OWNER in un'altra stanza (fallback)
+            const roomsSnap = await get(ref(db, `rooms`));
+            if (roomsSnap.exists()) {
+                const rooms = roomsSnap.val();
+                for (const code of Object.keys(rooms)) {
+                    if (rooms[code].masterEmail === masterEmailKey) {
+                        return code;
+                    }
+                }
             }
 
             let roomCode = '';
@@ -43,6 +53,7 @@ export function useCreateRoom() {
             const now = Date.now();
 
             const roomData: Room = {
+                name: data.roomName,
                 masterEmail: masterEmailKey,
                 createdAt: now,
                 updatedAt: now,

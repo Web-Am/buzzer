@@ -1,15 +1,4 @@
-// app/lib/game-logic.ts
-
-import { Participant } from "../types";
-
-export interface Press {
-    userId: string;
-    pointsUsed: number;
-    serverTs: number;
-    targetText: string;
-    value: number;
-}
-
+import { Press } from '../types';
 
 export interface CanPressResult {
     canPress: boolean;
@@ -28,123 +17,149 @@ export function generateRoomCode(length = 6): string {
     return code;
 }
 
-export function calculatePointsUsed(participant: Participant): number {
-    if (!participant.roundsWon?.length) return 0;
+export function calculatePointsUsed(participant: {
+    pointsTotal: number;
+    pointsUsed: number;
+    roundsWon?: Array<{ pointsAwarded: number }>;
+}): number {
+    if (!participant.roundsWon?.length) return participant.pointsUsed || 0;
     return participant.roundsWon.reduce((sum, r) => sum + r.pointsAwarded, 0);
 }
 
-export function getPointsAvailable(participant: Participant): number {
+export function getPointsAvailable(participant: {
+    pointsTotal: number;
+    pointsUsed: number;
+}): number {
     return participant.pointsTotal - participant.pointsUsed;
 }
 
-// ===== WINNER LOGIC (NEW SYSTEM) =====
+// ===== CUMULATIVE BID SYSTEM =====
 
-/**
- * Trova il vincitore attuale del round durante il gioco (chi ha usato più punti)
- */
-export function getCurrentWinner(presses: Record<string, Press>): { userId: string; pointsUsed: number } | null {
+export function getCumulativeBid(presses: Record<string, Press> | undefined, userKey: string): number {
+    if (!presses || !presses[userKey]) return 0;
+    return presses[userKey].cumulativeBid ?? presses[userKey].pointsUsed ?? 0;
+}
+
+export function getCurrentWinner(presses: Record<string, Press> | undefined): { userId: string; cumulativeBid: number } | null {
     if (!presses || Object.keys(presses).length === 0) {
         return null;
     }
 
-    let maxPoints = 0;
+    let maxBid = 0;
     let winnerId = '';
     let earliestTs = Infinity;
 
     Object.entries(presses).forEach(([userId, press]) => {
-        if (press.pointsUsed > maxPoints || (press.pointsUsed === maxPoints && press.serverTs < earliestTs)) {
-            maxPoints = press.pointsUsed;
+        const bid = press.cumulativeBid ?? press.pointsUsed ?? 0;
+        if (bid > maxBid || (bid === maxBid && press.serverTs < earliestTs)) {
+            maxBid = bid;
             winnerId = userId;
             earliestTs = press.serverTs;
         }
     });
 
-    return winnerId ? { userId: winnerId, pointsUsed: maxPoints } : null;
+    return winnerId ? { userId: winnerId, cumulativeBid: maxBid } : null;
 }
 
-/**
- * Calcola i punti necessari per buzzare
- * - Se non c'è nessun vincitore: bonus (1, 5, 10, 20)
- * - Se c'è un vincitore: punti del vincitore + bonus
- */
-export function calculateRequiredPoints(
-    presses: Record<string, Press> | undefined,
-    bonus: number = 1
+export function calculateBidCost(
+    userCumulativeBid: number,
+    winnerCumulativeBid: number,
+    increment: number
 ): number {
-    if (!presses) return bonus;
+    const minimumToOutbid = userCumulativeBid === 0
+        ? increment // first bid: use the increment directly
+        : (winnerCumulativeBid - userCumulativeBid) + increment;
 
-    const winner = getCurrentWinner(presses);
-
-    if (!winner) {
-        // Nessuno ha ancora premuto, costo = bonus
-        return bonus;
-    }
-
-    // Per superare il vincitore attuale
-    return winner.pointsUsed + bonus;
+    return Math.max(minimumToOutbid, 1);
 }
 
-/**
- * Calcola il costo base del buzzer (sempre uguale al costo per superare + 1)
- */
-export function calculateBasePressValue(presses: Record<string, Press> | undefined): number {
-    return calculateRequiredPoints(presses, 1);
+export function getMinimumToOutbid(
+    userCumulativeBid: number,
+    winnerCumulativeBid: number
+): number {
+    if (userCumulativeBid === 0) return 1;
+    return winnerCumulativeBid - userCumulativeBid + 1;
 }
 
-/**
- * Verifica se l'utente può premere il buzzer (NEW LOGIC)
- */
-export function canUserPress(params: {
-    participant: Participant | undefined;
+export function canUserBid(params: {
+    participant: {
+        pointsTotal: number;
+        pointsUsed: number;
+        isViewer?: boolean;
+    } | undefined;
     presses: Record<string, Press> | undefined;
     userKey: string;
-    bonus: number;
+    increment: number;
 }): CanPressResult {
-    const { participant, presses, userKey, bonus } = params;
+    const { participant, presses, userKey, increment } = params;
 
     if (!participant) {
         return { canPress: false, reason: 'Partecipante non trovato' };
     }
 
-    const pointsAvailable = getPointsAvailable(participant);
-    const requiredPoints = calculateRequiredPoints(presses, bonus);
-
-    // Verifica se hai abbastanza punti
-    if (pointsAvailable < requiredPoints) {
-        return {
-            canPress: false,
-            reason: `Servono ${requiredPoints} punti (ne hai ${pointsAvailable})`,
-            requiredPoints
-        };
+    if (participant.isViewer) {
+        return { canPress: false, reason: 'Gli spettatori non possono votare' };
     }
 
-    const winner = getCurrentWinner(presses || {});
+    const winner = getCurrentWinner(presses);
 
-    // Se sei già il vincitore, non puoi premere di nuovo
     if (winner && winner.userId === userKey) {
         return {
             canPress: false,
             reason: 'Sei già il vincitore attuale',
-            requiredPoints
+            requiredPoints: 0
         };
     }
 
-    // Puoi premere!
-    return { canPress: true, requiredPoints };
+    const userCumulativeBid = getCumulativeBid(presses, userKey);
+    const winnerCumulativeBid = winner?.cumulativeBid ?? 0;
+
+    const pointsAvailable = participant.pointsTotal - participant.pointsUsed;
+
+    if (userCumulativeBid === 0) {
+        // First bid: cost = increment
+        const cost = increment;
+        if (pointsAvailable < cost) {
+            return {
+                canPress: false,
+                reason: `Servono ${cost} punti (ne hai ${pointsAvailable})`,
+                requiredPoints: cost
+            };
+        }
+        return { canPress: true, requiredPoints: cost };
+    }
+
+    const remainingBudget = pointsAvailable - userCumulativeBid;
+    const minimumToOutbid = winnerCumulativeBid - userCumulativeBid + increment;
+
+    if (remainingBudget < minimumToOutbid) {
+        return {
+            canPress: false,
+            reason: `Servono almeno ${minimumToOutbid} punti (ne hai ${remainingBudget + userCumulativeBid} disponibili)`,
+            requiredPoints: minimumToOutbid
+        };
+    }
+
+    return { canPress: true, requiredPoints: minimumToOutbid };
 }
 
 // ===== VALIDATION FUNCTIONS =====
 
 export function validateRoomCreation(data: {
     name: string;
+    roomName: string;
     email: string;
     totalPoints: number;
     timerCountdown: number;
 }): { valid: boolean; errors: Record<string, string> } {
     const errors: Record<string, string> = {};
 
+    if (!data.roomName || data.roomName.trim().length < 2) {
+        errors.roomName = 'Il nome stanza deve avere almeno 2 caratteri.';
+    }
+
     if (!data.name || data.name.trim().length < 2) {
-        errors.name = 'Il nome deve avere almeno 2 caratteri.';
+        errors.name = 'Il tuo nome deve avere almeno 2 caratteri.';
     }
 
     if (!data.email || !/\S+@\S+\.\S+/.test(data.email)) {
@@ -183,3 +198,8 @@ export function validateJoinRoom(data: {
 
     return { valid: Object.keys(errors).length === 0, errors };
 }
+
+// Legacy aliases for backward compatibility
+export const calculateRequiredPoints = calculateBidCost;
+export const canUserPress = canUserBid;
+export const calculateBasePressValue = (p: Record<string, Press> | undefined) => 1;

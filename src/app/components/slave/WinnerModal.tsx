@@ -53,7 +53,7 @@ export function WinnerModal({ room }: Props) {
 
     const winnerName =
         room.currentRound.winner &&
-        room.participants[room.currentRound.winner]?.name;
+        room.participants?.[room.currentRound.winner]?.name;
 
     return (
         <>
@@ -77,8 +77,9 @@ export function WinnerModal({ room }: Props) {
                 {isWinner ? (
                     <div className="space-y-2 text-center">
                         <p className="text-sm">
-                            Hai vinto il round e recuperato{' '}
-                            <span className="font-semibold">{room.currentRound.winnerPoints} punti.</span>
+                            Hai speso{' '}
+                            <span className="font-semibold">{room.currentRound.winnerPoints} punti</span>
+                            {' '}per vincere il round.
                         </p>
                         <p className="text-xs text-gray-500">Domanda: {room.currentRound.questionText}</p>
                     </div>
@@ -87,6 +88,7 @@ export function WinnerModal({ room }: Props) {
                         <p className="text-sm">
                             Il vincitore è{' '}
                             <span className="font-semibold">{winnerName ?? 'Sconosciuto'}</span>
+                            {' '}con {room.currentRound.winnerPoints} punti.
                         </p>
                         <p className="text-xs text-gray-500">Domanda: {room.currentRound.questionText}</p>
                     </div>

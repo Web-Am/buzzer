@@ -22,12 +22,14 @@ export interface Participant {
     name: string;
     email: string;
     isOnline: boolean;
+    isViewer?: boolean;
     pointsTotal: number;
     pointsUsed: number;
     roundsWon: RoundWon[];
 }
 
 export interface Room {
+    name: string;
     masterEmail: string;
     createdAt: number;
     updatedAt: number;

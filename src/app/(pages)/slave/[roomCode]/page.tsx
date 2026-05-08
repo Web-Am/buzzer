@@ -11,24 +11,27 @@ import { UserDropdown } from '@/app/components/shared/UserDropdown';
 import { Card } from '@/app/components/ui/Card';
 import { Timer } from '@/app/components/ui/Timer';
 import { ParticipantsTable } from '@/app/components/master/PartecipantsTable';
+import { Button } from '@/app/components/ui/Button';
 import { useBuzzer } from '@/app/hooks/useBuzzer';
 import { usePageLeave } from '@/app/hooks/useLeave';
 import { useRoom } from '@/app/hooks/useRoom';
 import { db } from '@/app/lib/firebase';
-import { calculateRequiredPoints, canUserPress, getCurrentWinner } from '@/app/lib/game-logic';
+import { canUserBid, getCurrentWinner, getCumulativeBid, getMinimumToOutbid } from '@/app/lib/game-logic';
 import { useRoomStore } from '@/app/store/roomStore';
 import { ref, update } from 'firebase/database';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function SlavePage() {
     const router = useRouter();
     const params = useParams<{ roomCode: string }>();
     const roomCode = params.roomCode;
 
-    const { press } = useBuzzer(roomCode);
+    const { press, pressCustom } = useBuzzer(roomCode);
     const { loading } = useRoom(roomCode);
     const { room, setRoomCode, setRole, userKey, setUserKey } = useRoomStore();
+
+    const [customAmount, setCustomAmount] = useState<number>(1);
 
     const currentRound = room?.currentRound ?? null;
     const { remaining: timerRemaining } = useTimer(
@@ -79,66 +82,67 @@ export default function SlavePage() {
                 round: null,
                 participant: undefined,
                 canPressButtons: {
-                    base: { canPress: false, reason: 'Non pronto' },
-                    bonus5: { canPress: false, reason: 'Non pronto' },
-                    bonus10: { canPress: false, reason: 'Non pronto' },
-                    bonus20: { canPress: false, reason: 'Non pronto' }
+                    bid1: { canPress: false, reason: 'Non pronto', requiredPoints: 0 },
+                    bid5: { canPress: false, reason: 'Non pronto', requiredPoints: 0 },
+                    bid20: { canPress: false, reason: 'Non pronto', requiredPoints: 0 },
+                    custom: { canPress: false, reason: 'Non pronto', requiredPoints: 0 }
                 },
-                costs: { base: 1, bonus5: 6, bonus10: 11, bonus20: 21 },
+                costs: { bid1: 1, bid5: 5, bid20: 20, custom: 1 },
                 currentWinner: null,
+                userCumulativeBid: 0,
                 isActive: false
             };
         }
 
         const currentRound = room.currentRound ?? null;
-        const participant = room.participants[userKey];
+        const participant = room.participants?.[userKey];
         const presses = currentRound?.presses ?? {};
         const isActive = currentRound?.status !== 'FINISHED';
 
         const winner = getCurrentWinner(presses);
+        const userCumulativeBid = getCumulativeBid(presses, userKey);
 
-        // Calcola i costi per ogni bottone
-        const baseCost = calculateRequiredPoints(presses, 1);
-        const bonus5Cost = calculateRequiredPoints(presses, 5);
-        const bonus10Cost = calculateRequiredPoints(presses, 10);
-        const bonus20Cost = calculateRequiredPoints(presses, 20);
-
-        // Verifica se puoi premere ogni bottone
-        const canPressBase = canUserPress({ participant: participant && { ...participant, email: userKey }, presses, userKey, bonus: 1 });
-        const canPressBonus5 = canUserPress({ participant: participant && { ...participant, email: userKey }, presses, userKey, bonus: 5 });
-        const canPressBonus10 = canUserPress({ participant: participant && { ...participant, email: userKey }, presses, userKey, bonus: 10 });
-        const canPressBonus20 = canUserPress({ participant: participant && { ...participant, email: userKey }, presses, userKey, bonus: 20 });
+        const canPressBid1 = canUserBid({ participant, presses, userKey, increment: 1 });
+        const canPressBid5 = canUserBid({ participant, presses, userKey, increment: 5 });
+        const canPressBid20 = canUserBid({ participant, presses, userKey, increment: 20 });
+        const canPressCustom = canUserBid({ participant, presses, userKey, increment: customAmount || 1 });
 
         return {
             round: currentRound,
             participant,
             canPressButtons: {
-                base: canPressBase,
-                bonus5: canPressBonus5,
-                bonus10: canPressBonus10,
-                bonus20: canPressBonus20
+                bid1: canPressBid1,
+                bid5: canPressBid5,
+                bid20: canPressBid20,
+                custom: canPressCustom
             },
             costs: {
-                base: baseCost,
-                bonus5: bonus5Cost,
-                bonus10: bonus10Cost,
-                bonus20: bonus20Cost
+                bid1: canPressBid1.requiredPoints ?? 1,
+                bid5: canPressBid5.requiredPoints ?? 5,
+                bid20: canPressBid20.requiredPoints ?? 20,
+                custom: canPressCustom.requiredPoints ?? customAmount
             },
             currentWinner: winner,
+            userCumulativeBid,
             isActive
         };
-    }, [room, userKey]);
+    }, [room, userKey, customAmount]);
 
     if (loading) return <p className="p-4">Caricamento...</p>;
     if (!room) return <p className="p-4">Stanza non trovata.</p>;
 
-    const { round, participant, canPressButtons, costs, currentWinner, isActive } = gameState;
+    const { round, participant, canPressButtons, costs, currentWinner, userCumulativeBid, isActive } = gameState;
     const pointsUsed = participant?.pointsUsed ?? 0;
     const pointsAvail = participant ? participant.pointsTotal - pointsUsed : 0;
-    const roundPointsUsed = round?.presses?.[userKey]?.pointsUsed ?? 0;
+    const pointsRemaining = participant ? (participant.pointsTotal - pointsUsed - userCumulativeBid) : 0;
 
     const isWinner = currentWinner?.userId === userKey;
     const participantName = participant?.name || 'Partecipante';
+
+    const minimumCustomBid = userCumulativeBid === 0
+        ? 1
+        : Math.max(1, (currentWinner?.cumulativeBid ?? 0) - userCumulativeBid + 1);
+    const maxCustomBid = pointsAvail - userCumulativeBid;
 
     return (
         <>
@@ -146,29 +150,29 @@ export default function SlavePage() {
             <div className="min-h-screen bg-gray-50">
                 <ConnectionStatus />
                 <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
-                    {/* Header con info utente e codice stanza */}
+                    {/* Header with user info */}
                     <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <div>
                                 <h1 className="text-xl font-bold text-gray-900">Partecipante</h1>
                                 <div className="flex flex-wrap gap-4 text-sm text-gray-600 mt-1">
-                                    <span>💰 Disponibili: <strong className="text-green-600">{pointsAvail}</strong></span>
-                                    {isActive && roundPointsUsed > 0 && (
-                                        <span>🎯 Usati questo round: <strong className="text-orange-600">{roundPointsUsed}</strong></span>
+                                    <span>💰 Budget: <strong className="text-green-600">{pointsAvail}</strong></span>
+                                    {isActive && userCumulativeBid > 0 && (
+                                        <span>🎯 Puntata nel round: <strong className="text-orange-600">{userCumulativeBid}</strong></span>
                                     )}
-                                    {currentWinner && (
-                                        <span>🏆 Vincitore attuale: <strong className="text-blue-600">{currentWinner.pointsUsed} punti</strong></span>
+                                    {isActive && (
+                                        <span>📊 Rimanenti: <strong className="text-blue-600">{pointsRemaining}</strong></span>
                                     )}
                                 </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
-                                Stanza: {roomCode}
+                                {room.name || 'Stanza'}: {roomCode}
                             </div>
                             <UserDropdown
                                 name={participantName}
-                                email={userKey}
+                                email={userKey ?? ''}
                                 onLogout={handleLogout}
                             />
                         </div>
@@ -186,53 +190,91 @@ export default function SlavePage() {
                                 />
                             )}
 
+                            {/* Current winner display */}
+                            {currentWinner && isActive && (
+                                <div className="rounded-lg bg-yellow-50 border border-yellow-200 px-6 py-3 text-center w-full max-w-sm">
+                                    <p className="text-sm text-yellow-700">
+                                        <span className="font-semibold">
+                                            {room.participants?.[currentWinner.userId]?.name || 'Qualcuno'}
+                                        </span>{' '}
+                                        sta vincendo con{' '}
+                                        <span className="font-bold">{currentWinner.cumulativeBid}</span> punti
+                                    </p>
+                                </div>
+                            )}
+
                             {isWinner && (
                                 <div className="rounded-lg bg-green-100 px-6 py-3 text-green-800 font-semibold text-center animate-pulse">
                                     🏆 Sei il vincitore attuale!
                                 </div>
                             )}
 
-                            {/* Buzzer principale */}
+                            {/* Buzzer area */}
                             <div className="flex flex-col items-center gap-4">
+                                {/* Main buzzer - +1 */}
                                 <div className="relative">
                                     <Buzzer
-                                        disabled={!round || !isActive || !canPressButtons.base.canPress}
-                                        label={costs.base.toString()}
+                                        disabled={!round || !isActive || !canPressButtons.bid1.canPress}
+                                        label={`+1 (${costs.bid1})`}
                                         onPress={() => press(1)}
                                     />
-                                    {!canPressButtons.base.canPress && (
-                                        <p className="text-xs text-red-500 text-center mt-2 max-w-xs">
-                                            {canPressButtons.base.reason ?? 'Non puoi premere ora.'}
-                                        </p>
-                                    )}
                                 </div>
 
-                                {/* Buzzer bonus */}
+                                {/* Bonus buttons */}
                                 <div className="flex gap-3 flex-wrap justify-center">
                                     <MiniBuzzer
                                         bonus={5}
-                                        disabled={!round || !isActive || !canPressButtons.bonus5.canPress}
-                                        cost={costs.bonus5}
+                                        disabled={!round || !isActive || !canPressButtons.bid5.canPress}
+                                        cost={costs.bid5}
                                         onPress={() => press(5)}
                                     />
                                     <MiniBuzzer
-                                        bonus={10}
-                                        disabled={!round || !isActive || !canPressButtons.bonus10.canPress}
-                                        cost={costs.bonus10}
-                                        onPress={() => press(10)}
-                                    />
-                                    <MiniBuzzer
                                         bonus={20}
-                                        disabled={!round || !isActive || !canPressButtons.bonus20.canPress}
-                                        cost={costs.bonus20}
+                                        disabled={!round || !isActive || !canPressButtons.bid20.canPress}
+                                        cost={costs.bid20}
                                         onPress={() => press(20)}
                                     />
+                                </div>
+
+                                {/* Custom bid input */}
+                                <div className="w-full max-w-xs space-y-2">
+                                    <label className="block text-sm font-medium text-gray-600 text-center">
+                                        Puntata personalizzata
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="number"
+                                            min={minimumCustomBid}
+                                            max={maxCustomBid}
+                                            value={customAmount}
+                                            onChange={(e) => setCustomAmount(Math.max(1, Number(e.target.value)))}
+                                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                                            disabled={!round || !isActive}
+                                        />
+                                        <Button
+                                            disabled={!round || !isActive || !canPressButtons.custom.canPress}
+                                            onClick={() => pressCustom(customAmount)}
+                                            size="sm"
+                                        >
+                                            Punta
+                                        </Button>
+                                    </div>
+                                    {!canPressButtons.custom.canPress && canPressButtons.custom.reason && (
+                                        <p className="text-xs text-red-500 text-center">
+                                            {canPressButtons.custom.reason}
+                                        </p>
+                                    )}
+                                    {userCumulativeBid > 0 && (
+                                        <p className="text-xs text-gray-500 text-center">
+                                            Devi puntare almeno {minimumCustomBid} punti per superare il vincitore
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </Card>
 
-                    {/* Tabella Partecipanti */}
+                    {/* Participants Table */}
                     <Card className="p-6">
                         <h3 className="text-lg font-semibold mb-4 text-gray-900">Partecipanti</h3>
                         <ParticipantsTable room={room} />

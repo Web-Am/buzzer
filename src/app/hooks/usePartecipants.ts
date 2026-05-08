@@ -13,7 +13,7 @@ export function useParticipant(userKey?: string) {
         if (!room || !targetKey || !room.participants) {
             return null;
         }
-        return room.participants[targetKey] ?? null;
+        return room.participants?.[targetKey] ?? null;
     }, [room, targetKey]);
 
     const availablePoints = useMemo(() => {

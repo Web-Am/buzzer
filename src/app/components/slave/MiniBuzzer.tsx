@@ -15,7 +15,6 @@ export function MiniBuzzer({ bonus, disabled, cost, onPress }: MiniBuzzerProps) 
         if (disabled) return 'bg-gray-400 border-gray-500';
         switch (bonus) {
             case 5: return 'bg-orange-500 hover:bg-orange-600 border-orange-700';
-            case 10: return 'bg-purple-500 hover:bg-purple-600 border-purple-700';
             case 20: return 'bg-pink-500 hover:bg-pink-600 border-pink-700';
             default: return 'bg-blue-500 hover:bg-blue-600 border-blue-700';
         }

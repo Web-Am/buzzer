@@ -7,12 +7,15 @@ import Header from '@/app/components/shared/Header';
 import { RoomCodeDisplay } from '@/app/components/shared/RoomCodeDisplay';
 import { UserDropdown } from '@/app/components/shared/UserDropdown';
 import { Card } from '@/app/components/ui/Card';
+import { Button } from '@/app/components/ui/Button';
+import { Modal } from '@/app/components/ui/Modal';
 import { Leaderboard } from '@/app/components/ui/Leaderboard';
 import { useRoom } from '@/app/hooks/useRoom';
-import { sanitizeEmailKey } from '@/app/lib/firebase-utils';
 import { useRoomStore } from '@/app/store/roomStore';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { ref, remove } from 'firebase/database';
+import { db } from '@/app/lib/firebase';
 
 export default function MasterPage() {
 
@@ -22,10 +25,24 @@ export default function MasterPage() {
     const roomCode = params.roomCode;
     const { loading } = useRoom(roomCode);
     const { room, setRoomCode, setUserKey, userKey, setRole } = useRoomStore();
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     const handleLogout = () => {
         localStorage.removeItem(`userEmail_${roomCode}`);
         router.push('/');
+    };
+
+    const handleDeleteRoom = async () => {
+        if (!roomCode || !userKey) return;
+
+        try {
+            await remove(ref(db, `rooms/${roomCode}`));
+            await remove(ref(db, `masters/${userKey}`));
+            localStorage.removeItem(`userEmail_${roomCode}`);
+            router.push('/');
+        } catch (err) {
+            console.error('Errore eliminazione stanza:', err);
+        }
     };
 
     useEffect(() => {
@@ -47,8 +64,8 @@ export default function MasterPage() {
     if (loading) return <p className="p-4">Caricamento...</p>;
     if (!room) return <p className="p-4">Stanza non trovata.</p>;
 
-    const masterName = room.participants[userKey]?.name || 'Master';
-    const masterEmail = userKey;
+    const masterName = (userKey && room.participants?.[userKey]?.name) || 'Master';
+    const masterEmail = userKey ?? '';
 
     return <>
         <Header />
@@ -57,7 +74,9 @@ export default function MasterPage() {
             <main className="container mx-auto space-y-6 px-4 py-8 max-w-7xl">
                 <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-gray-900">Dashboard Master</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">
+                            {room.name || 'Dashboard Master'}
+                        </h1>
                         <p className="text-sm text-gray-600 mt-1">
                             Gestisci round, partecipanti e punteggi.
                         </p>
@@ -81,7 +100,56 @@ export default function MasterPage() {
                 <Card className="p-6">
                     <ParticipantsTable room={room} />
                 </Card>
+
+                {/* Delete room section */}
+                <Card className="p-6 border-red-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-semibold text-red-700">Elimina Stanza</h3>
+                            <p className="text-sm text-gray-500">
+                                Questa azione cancellerà permanentemente la stanza e tutti i dati.
+                            </p>
+                        </div>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setShowDeleteModal(true)}
+                            className="bg-red-600 text-white hover:bg-red-700"
+                        >
+                            Elimina
+                        </Button>
+                    </div>
+                </Card>
             </main>
         </div>
+
+        <Modal
+            open={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            title="Eliminare la stanza?"
+        >
+            <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                    Sei sicuro di voler eliminare la stanza <strong>{roomCode}</strong>?
+                    Tutti i dati, punteggi e cronologie andranno persi.
+                </p>
+                <p className="text-sm font-semibold text-red-600">
+                    Questa azione è irreversibile.
+                </p>
+                <div className="flex gap-3 justify-end">
+                    <Button
+                        variant="secondary"
+                        onClick={() => setShowDeleteModal(false)}
+                    >
+                        Annulla
+                    </Button>
+                    <Button
+                        onClick={handleDeleteRoom}
+                        className="bg-red-600 text-white hover:bg-red-700"
+                    >
+                        Elimina Permanentemente
+                    </Button>
+                </div>
+            </div>
+        </Modal>
     </>
 }

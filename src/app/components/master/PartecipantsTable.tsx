@@ -20,6 +20,7 @@ export function ParticipantsTable({ room }: Props) {
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-3 py-2 text-left">Nome</th>
+                            <th className="px-3 py-2 text-center">Ruolo</th>
                             <th className="px-3 py-2 text-right">Round vinti</th>
                             <th className="px-3 py-2 text-right">Punti usati</th>
                             <th className="px-3 py-2 text-right">Punti disponibili</th>
@@ -34,6 +35,17 @@ export function ParticipantsTable({ room }: Props) {
                             return (
                                 <tr key={key} className="border-t cursor-pointer hover:bg-blue-50 transition-colors" onClick={() => setSelectedParticipant({ key, data: p })}>
                                     <td className="px-3 py-2">{p.name}</td>
+                                    <td className="px-3 py-2 text-center">
+                                        {p.isViewer ? (
+                                            <span className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                                                Viewer
+                                            </span>
+                                        ) : (
+                                            <span className="inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                                                Player
+                                            </span>
+                                        )}
+                                    </td>
                                     <td className="px-3 py-2 text-right">
                                         {p.roundsWon?.length ?? 0}
                                     </td>
@@ -50,7 +62,7 @@ export function ParticipantsTable({ room }: Props) {
                             <tr>
                                 <td
                                     className="px-3 py-4 text-center text-gray-500"
-                                    colSpan={4} >
+                                    colSpan={6} >
                                     Ancora nessun partecipante.
                                 </td>
                             </tr>
@@ -65,12 +77,18 @@ export function ParticipantsTable({ room }: Props) {
                 onClose={() => setSelectedParticipant(null)}
                 title={`Dettagli: ${selectedParticipant?.data.name}`}
             >
-                {selectedParticipant && (
+                    {selectedParticipant && (
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-xs text-gray-500 uppercase">Email</p>
-                                <p className="font-semibold text-sm break-all">{selectedParticipant.data.email}</p>
+                                <p className="text-xs text-gray-500 uppercase">Ruolo</p>
+                                <p className="font-semibold text-sm">
+                                    {selectedParticipant.data.isViewer ? (
+                                        <span className="text-gray-500">Spettatore</span>
+                                    ) : (
+                                        <span className="text-blue-600">Giocatore</span>
+                                    )}
+                                </p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 uppercase">Connesso</p>
@@ -78,6 +96,10 @@ export function ParticipantsTable({ room }: Props) {
                                     }`}>
                                     {selectedParticipant.data.isOnline ? '🟢 Sì' : '🔴 No'}
                                 </p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 uppercase">Email</p>
+                                <p className="font-semibold text-sm break-all">{selectedParticipant.data.email}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 uppercase">Crediti Iniziali</p>

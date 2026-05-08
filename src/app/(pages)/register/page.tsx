@@ -17,11 +17,13 @@ export default function RegisterPage() {
     const { isCreatingRoom } = useUIStore();
 
     const [formData, setFormData] = useState({
-        name: 'andrea', email: 'andrea.air144@gmail.com',
+        name: 'Andrea', roomName: 'Fanta Quiz',
+        email: 'andrea.air144@gmail.com',
         totalPoints: 300, timerCountdown: 10,
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,12 +38,17 @@ export default function RegisterPage() {
         }
 
         setErrors({});
+        setSubmitError(null);
 
         const roomCode = await createRoom({ ...formData, timerCountdown: formData.timerCountdown * 1000 });
 
+        if (!roomCode) {
+            setSubmitError('Errore durante la creazione della stanza. Riprova.');
+            return;
+        }
+
         localStorage.setItem(`userEmail_${roomCode}`, formData.email);
-        if (roomCode)
-            router.push(`/master/${roomCode}`);
+        router.push(`/master/${roomCode}`);
     };
 
     return <>
@@ -66,7 +73,18 @@ export default function RegisterPage() {
                 <h1 className="mb-6 text-2xl font-bold">Crea Stanza</h1>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Input
-                        label="Nome"
+                        label="Nome Stanza"
+                        type="text"
+                        value={formData.roomName}
+                        onChange={(e) =>
+                            setFormData((s) => ({ ...s, roomName: e.target.value }))
+                        }
+                        error={errors.roomName}
+                        required
+                    />
+
+                    <Input
+                        label="Il tuo Nome"
                         type="text"
                         value={formData.name}
                         onChange={(e) =>
@@ -89,7 +107,7 @@ export default function RegisterPage() {
 
                     <div>
                         <label className="mb-2 block text-sm font-medium">
-                            Punti Totali: {formData.totalPoints}
+                            Budget Punti: {formData.totalPoints}
                         </label>
                         <input
                             type="range"
@@ -126,6 +144,10 @@ export default function RegisterPage() {
                             className="w-full"
                         />
                     </div>
+
+                    {submitError && (
+                        <p className="text-sm text-red-500 text-center">{submitError}</p>
+                    )}
 
                     <Button type="submit" size="lg" className="w-full" isLoading={isCreatingRoom}>
                         Crea Stanza
