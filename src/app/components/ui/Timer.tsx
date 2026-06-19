@@ -31,7 +31,7 @@ export function Timer({ remainingMs, totalMs }: TimerProps) {
     // Rosso se <= 3 secondi
     const isLowTime = currentMs <= 3000;
     const strokeColor = isLowTime ? '#dc2626' : '#2563eb';
-    const textColor = isLowTime ? 'text-red-600' : 'text-gray-900';
+    const textColor = isLowTime ? 'text-red-600' : 'text-gray-900 dark:text-gray-100';
 
     return (
         <div className="flex flex-col items-center">
@@ -67,7 +67,7 @@ export function Timer({ remainingMs, totalMs }: TimerProps) {
                     </span>
                 </div>
             </div>
-            <p className="mt-2 text-xs text-gray-500">Tempo rimanente</p>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Tempo rimanente</p>
         </div>
     );
 }

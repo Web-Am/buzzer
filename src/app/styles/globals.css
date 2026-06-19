@@ -18,6 +18,7 @@ body {
 
 body {
   font-family: var(--font-family-poppins);
+  @apply text-gray-900 bg-white dark:text-gray-100 dark:bg-gray-900;
 }
 
 a {

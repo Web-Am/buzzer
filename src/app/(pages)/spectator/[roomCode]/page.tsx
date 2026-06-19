@@ -42,7 +42,7 @@ export default function SpectatorPage() {
     return (
         <>
             <Header />
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                 <ConnectionStatus />
             <main className="container mx-auto px-4 py-8 space-y-6">
                 <header className="flex items-center justify-between">
@@ -50,7 +50,7 @@ export default function SpectatorPage() {
                         <h1 className="text-2xl font-bold">
                             {room.name || 'Stanza'} – {roomCode}
                         </h1>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                             Solo visualizzazione – nessuna interazione.
                         </p>
                     </div>

@@ -30,7 +30,7 @@ export function UserDropdown({ name, email, onLogout, onDelete }: UserDropdownPr
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center space-x-2 p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+                className="flex items-center space-x-2 p-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 aria-label="User menu"
             >
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
@@ -47,15 +47,15 @@ export function UserDropdown({ name, email, onLogout, onDelete }: UserDropdownPr
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <div className="p-4 border-b border-gray-200">
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                         <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
                                 {name.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-900 truncate">{name}</p>
-                                <p className="text-xs text-gray-500 truncate">{desanitizeEmailKey(email)}</p>
+                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{name}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{desanitizeEmailKey(email)}</p>
                             </div>
                         </div>
                     </div>
@@ -67,11 +67,11 @@ export function UserDropdown({ name, email, onLogout, onDelete }: UserDropdownPr
                                         setIsOpen(false);
                                         onDelete();
                                     }}
-                                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
                                 >
                                     🗑️ Elimina Stanza
                                 </button>
-                                <hr className="my-1 border-gray-100" />
+                                <hr className="my-1 border-gray-100 dark:border-gray-700" />
                             </>
                         )}
                         <button

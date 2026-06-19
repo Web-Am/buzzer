@@ -90,7 +90,7 @@ export default function RegisterPage() {
                     />
 
                     <div>
-                        <label className="mb-2 block text-sm font-medium">
+                        <label className="mb-2 block text-sm font-medium dark:text-gray-300">
                             Budget Punti: {formData.totalPoints}
                         </label>
                         <input
@@ -105,12 +105,12 @@ export default function RegisterPage() {
                                     totalPoints: Number(e.target.value)
                                 }))
                             }
-                            className="w-full"
+                            className="w-full accent-primary-600 dark:accent-primary-400"
                         />
                     </div>
 
                     <div>
-                        <label className="mb-2 block text-sm font-medium">
+                        <label className="mb-2 block text-sm font-medium dark:text-gray-300">
                             Timer: {formData.timerCountdown} secondi
                         </label>
                         <input
@@ -125,7 +125,7 @@ export default function RegisterPage() {
                                     timerCountdown: Number(e.target.value)
                                 }))
                             }
-                            className="w-full"
+                            className="w-full accent-primary-600 dark:accent-primary-400"
                         />
                     </div>
 

@@ -38,7 +38,7 @@ export function Leaderboard({ room }: LeaderboardProps) {
                 {entries.map((e, idx) => (
                     <div
                         key={e.key}
-                        className={`flex items-center justify-between rounded-xl px-3 py-2 ${e.isViewer ? 'bg-gray-50/50' : 'bg-gray-50'}`}
+                        className={`flex items-center justify-between rounded-xl px-3 py-2 ${e.isViewer ? 'bg-gray-50/50 dark:bg-gray-800/30' : 'bg-gray-50 dark:bg-gray-800/50'}`}
                     >
                         <div className="flex items-center gap-2">
                             <span className="w-6 text-center text-sm font-semibold">
@@ -48,12 +48,12 @@ export function Leaderboard({ room }: LeaderboardProps) {
                                 <div className="text-sm font-medium">
                                     {e.name}
                                     {e.isViewer && (
-                                        <span className="ml-2 inline-block rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                                        <span className="ml-2 inline-block rounded-full bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
                                             Viewer
                                         </span>
                                     )}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
                                     {desanitizeEmailKey(e.key)}
                                 </div>
                             </div>
@@ -61,13 +61,13 @@ export function Leaderboard({ room }: LeaderboardProps) {
                         {!e.isViewer && (
                             <div className="text-right text-xs">
                                 <div className="font-semibold">{e.roundsWon} round vinti</div>
-                                <div className="text-gray-500">Crediti: {e.available}/{e.pointsTotal}</div>
+                                <div className="text-gray-500 dark:text-gray-400">Crediti: {e.available}/{e.pointsTotal}</div>
                             </div>
                         )}
                     </div>
                 ))}
                 {entries.length === 0 && (
-                    <p className="text-sm text-gray-500">Ancora nessun partecipante.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Ancora nessun partecipante.</p>
                 )}
             </div>
         </div>

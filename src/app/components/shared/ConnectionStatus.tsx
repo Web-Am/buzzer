@@ -17,7 +17,7 @@ export function ConnectionStatus() {
     }, []);
 
     return (
-        <div className="fixed bottom-4 right-4 rounded-full bg-white px-3 py-1 text-xs shadow border">
+        <div className="fixed bottom-4 right-4 rounded-full bg-white dark:bg-gray-800 px-3 py-1 text-xs shadow border">
             <span
                 className={`mr-2 inline-block h-2 w-2 rounded-full ${online ? 'bg-emerald-500' : 'bg-red-500'
                     }`}

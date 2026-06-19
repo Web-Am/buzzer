@@ -156,7 +156,7 @@ export default function SlavePage() {
                 isActive={isActive}
                 onLogout={handleLogout}
             />
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                 <ConnectionStatus />
                 <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
 
@@ -174,8 +174,8 @@ export default function SlavePage() {
 
                             {/* Current winner display */}
                             {currentWinner && isActive && (
-                                <div className="rounded-lg bg-yellow-50 border border-yellow-200 px-6 py-3 text-center w-full max-w-sm">
-                                    <p className="text-sm text-yellow-700">
+                                <div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 px-6 py-3 text-center w-full max-w-sm">
+                                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
                                         <span className="font-semibold">
                                             {room.participants?.[currentWinner.userId]?.name || 'Qualcuno'}
                                         </span>{' '}
@@ -186,7 +186,7 @@ export default function SlavePage() {
                             )}
 
                             {isWinner && (
-                                <div className="rounded-lg bg-green-100 px-6 py-3 text-green-800 font-semibold text-center animate-pulse">
+                                <div className="rounded-lg bg-green-100 dark:bg-green-900/30 px-6 py-3 text-green-800 dark:text-green-300 font-semibold text-center animate-pulse">
                                     🏆 Sei il vincitore attuale!
                                 </div>
                             )}
@@ -220,7 +220,7 @@ export default function SlavePage() {
 
                                 {/* Custom bid input */}
                                 <div className="w-full max-w-xs space-y-2">
-                                    <label className="block text-sm font-medium text-gray-600 text-center">
+                                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 text-center">
                                         Puntata personalizzata
                                     </label>
                                     <div className="flex gap-2">
@@ -230,7 +230,7 @@ export default function SlavePage() {
                                             max={maxCustomBid}
                                             value={customAmount}
                                             onChange={(e) => setCustomAmount(Math.max(1, Number(e.target.value)))}
-                                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                                             disabled={!round || !isActive}
                                         />
                                         <Button
@@ -247,7 +247,7 @@ export default function SlavePage() {
                                         </p>
                                     )}
                                     {userCumulativeBid > 0 && (
-                                        <p className="text-xs text-gray-500 text-center">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                                             Devi puntare almeno {minimumCustomBid} crediti per superare il vincitore
                                         </p>
                                     )}
@@ -258,7 +258,7 @@ export default function SlavePage() {
 
                     {/* Participants Table */}
                     <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-900">Partecipanti</h3>
+                        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Partecipanti</h3>
                         <ParticipantsTable room={room} />
                     </Card>
 

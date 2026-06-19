@@ -130,13 +130,13 @@ export default function JoinPage() {
                 </h1>
 
                 {/* Mode selector */}
-                <div className="mb-6 flex rounded-xl bg-gray-100 p-1">
+                <div className="mb-6 flex rounded-xl bg-gray-100 dark:bg-gray-700 p-1">
                     <button
                         type="button"
-                        onClick={() => switchMode('play')}
-                        className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${mode === 'play'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'
+onClick={() => switchMode('play')}
+                         className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${mode === 'play'
+                            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                     >
                         Partecipa
@@ -145,8 +145,8 @@ export default function JoinPage() {
                         type="button"
                         onClick={() => switchMode('watch')}
                         className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${mode === 'watch'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'
+                            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                     >
                         Solo Visualizzazione
@@ -154,7 +154,7 @@ export default function JoinPage() {
                 </div>
 
                 {mode === 'watch' && (
-                    <p className="mb-4 text-sm text-gray-500">
+                    <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
                         Potrai vedere la domanda, la classifica e i punteggi in tempo reale, senza poter votare.
                     </p>
                 )}

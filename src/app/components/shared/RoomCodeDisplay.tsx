@@ -27,7 +27,7 @@ export function RoomCodeDisplay({ roomCode }: Props) {
         <div className="relative flex items-center gap-2">
             <span
                 onClick={copy}
-                className="cursor-pointer rounded-xl bg-gray-100 px-3 py-1 font-mono text-lg transition-colors hover:bg-gray-200"
+                className="cursor-pointer rounded-xl bg-gray-100 dark:bg-gray-700 px-3 py-1 font-mono text-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-600"
             >
                 {roomCode}
             </span>

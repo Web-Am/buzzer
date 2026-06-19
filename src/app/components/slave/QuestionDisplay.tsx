@@ -7,7 +7,7 @@ interface Props {
 export function QuestionDisplay({ round }: Props) {
     if (!round) {
         return (
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
                 In attesa che il Master avvii un nuovo round...
             </p>
         );
@@ -15,7 +15,7 @@ export function QuestionDisplay({ round }: Props) {
 
     return (
         <div className="text-center space-y-1">
-            <p className="text-xs uppercase tracking-wide text-gray-400">
+            <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">
                 Domanda in gioco
             </p>
             <p className="text-lg font-semibold">{round.questionText}</p>

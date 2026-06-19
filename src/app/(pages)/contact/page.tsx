@@ -73,24 +73,24 @@ export default function ContactPage() {
     return <>
         <Header />
         <main className="max-w-3xl mx-auto p-6">
-            <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                 <h1 className="text-2xl font-bold mb-2">Contattaci</h1>
-                <p className="text-sm text-gray-500 mb-4">Hai bisogno di assistenza o vuoi suggerire una funzionalità? Scrivici qui.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Hai bisogno di assistenza o vuoi suggerire una funzionalità? Scrivici qui.</p>
 
                 <form onSubmit={submit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium">Nome</label>
-                        <input value={name} onChange={e => setName(e.target.value)} className="w-full p-3 border rounded" placeholder="Il tuo nome" />
+                        <label className="block text-sm font-medium dark:text-gray-300">Nome</label>
+                        <input value={name} onChange={e => setName(e.target.value)} className="w-full p-3 border rounded dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" placeholder="Il tuo nome" />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium">Email</label>
-                        <input value={email} onChange={e => setEmail(e.target.value)} type="email" className="w-full p-3 border rounded" placeholder="tuo@email.com" />
+                        <label className="block text-sm font-medium dark:text-gray-300">Email</label>
+                        <input value={email} onChange={e => setEmail(e.target.value)} type="email" className="w-full p-3 border rounded dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" placeholder="tuo@email.com" />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium">Messaggio</label>
-                        <textarea value={message} onChange={e => setMessage(e.target.value)} className="w-full p-3 border rounded h-40" placeholder="Scrivi qui il tuo messaggio" />
+                        <label className="block text-sm font-medium dark:text-gray-300">Messaggio</label>
+                        <textarea value={message} onChange={e => setMessage(e.target.value)} className="w-full p-3 border rounded dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 h-40" placeholder="Scrivi qui il tuo messaggio" />
                     </div>
 
                     {error && <div className="text-sm text-red-600">{error}</div>}
@@ -108,7 +108,7 @@ export default function ContactPage() {
         {showModal && (
             <div className="fixed inset-0 z-60 flex items-center justify-center">
                 <div className="absolute inset-0 bg-black opacity-40" onClick={() => setShowModal(null)} />
-                <div className="bg-white rounded-lg shadow-xl p-6 z-10 max-w-sm text-center">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 z-10 max-w-sm text-center">
                     <div className={`text-3xl mb-2 ${showModal.ok ? 'text-green-500' : 'text-red-500'}`}>{showModal.ok ? '✓' : '✕'}</div>
                     <div className="mb-4">{showModal.msg}</div>
                     <button className="px-4 py-2 rounded bg-indigo-600 text-white" onClick={() => setShowModal(null)}>Chiudi</button>

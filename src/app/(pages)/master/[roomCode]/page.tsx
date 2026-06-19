@@ -74,7 +74,7 @@ export default function MasterPage() {
             onLogout={handleLogout}
             onDeleteRoom={() => setShowDeleteModal(true)}
         />
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <ConnectionStatus />
             <main className="container mx-auto space-y-6 px-4 py-8 max-w-7xl">
 
@@ -97,7 +97,7 @@ export default function MasterPage() {
             title="Eliminare la stanza?"
         >
             <div className="space-y-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                     Sei sicuro di voler eliminare la stanza <strong>{roomCode}</strong>?
                     Tutti i dati, crediti e cronologie andranno persi.
                 </p>
