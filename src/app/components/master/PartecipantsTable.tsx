@@ -24,6 +24,7 @@ export function ParticipantsTable({ room }: Props) {
         if (!roomCode || !selectedParticipant) return;
         await update(ref(db, `rooms/${roomCode}/participants/${selectedParticipant.key}`), {
             roundsWon: [],
+            pointsUsed: 0,
         });
         setShowResetConfirm(false);
         setSelectedParticipant(null);
@@ -198,7 +199,7 @@ export function ParticipantsTable({ room }: Props) {
                     <strong className="text-gray-900 dark:text-gray-100">{selectedParticipant?.data.name}</strong>?
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    Questa azione cancellerà la cronologia delle vittorie. I crediti spesi non verranno recuperati.
+                    Questa azione cancellerà la cronologia delle vittorie e ripristinerà tutti i crediti spesi.
                 </p>
             </Modal>
         </div>
