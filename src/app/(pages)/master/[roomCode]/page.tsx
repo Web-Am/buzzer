@@ -3,9 +3,7 @@
 import { ParticipantsTable } from '@/app/components/master/PartecipantsTable';
 import { RoundControl } from '@/app/components/master/RoundControl';
 import { ConnectionStatus } from '@/app/components/shared/ConnectionStatus';
-import Header from '@/app/components/shared/Header';
-import { RoomCodeDisplay } from '@/app/components/shared/RoomCodeDisplay';
-import { UserDropdown } from '@/app/components/shared/UserDropdown';
+import MasterHeader from '@/app/components/headers/MasterHeader';
 import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
 import { Modal } from '@/app/components/ui/Modal';
@@ -68,28 +66,17 @@ export default function MasterPage() {
     const masterEmail = userKey ?? '';
 
     return <>
-        <Header />
+        <MasterHeader
+            roomCode={roomCode}
+            roomName={room.name}
+            userName={masterName}
+            userEmail={masterEmail}
+            onLogout={handleLogout}
+            onDeleteRoom={() => setShowDeleteModal(true)}
+        />
         <div className="min-h-screen bg-gray-50">
             <ConnectionStatus />
             <main className="container mx-auto space-y-6 px-4 py-8 max-w-7xl">
-                <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            {room.name || 'Dashboard Master'}
-                        </h1>
-                        <p className="text-sm text-gray-600 mt-1">
-                            Gestisci round, partecipanti e punteggi.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <RoomCodeDisplay roomCode={roomCode} />
-                        <UserDropdown
-                            name={masterName}
-                            email={masterEmail}
-                            onLogout={handleLogout}
-                        />
-                    </div>
-                </header>
 
                 <div className="grid gap-6 lg:grid-cols-1">
                     <Card className="p-6">
@@ -101,24 +88,6 @@ export default function MasterPage() {
                     <ParticipantsTable room={room} />
                 </Card>
 
-                {/* Delete room section */}
-                <Card className="p-6 border-red-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-semibold text-red-700">Elimina Stanza</h3>
-                            <p className="text-sm text-gray-500">
-                                Questa azione cancellerà permanentemente la stanza e tutti i dati.
-                            </p>
-                        </div>
-                        <Button
-                            variant="secondary"
-                            onClick={() => setShowDeleteModal(true)}
-                            className="bg-red-600 text-white hover:bg-red-700"
-                        >
-                            Elimina
-                        </Button>
-                    </div>
-                </Card>
             </main>
         </div>
 
@@ -130,7 +99,7 @@ export default function MasterPage() {
             <div className="space-y-4">
                 <p className="text-sm text-gray-600">
                     Sei sicuro di voler eliminare la stanza <strong>{roomCode}</strong>?
-                    Tutti i dati, punteggi e cronologie andranno persi.
+                    Tutti i dati, crediti e cronologie andranno persi.
                 </p>
                 <p className="text-sm font-semibold text-red-600">
                     Questa azione è irreversibile.

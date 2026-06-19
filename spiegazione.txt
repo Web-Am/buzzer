@@ -1,0 +1,61 @@
+Ora che hai capito. Vorrei assieme a te discutere su cosa vorrei si ottenesse:
+
+
+[UTENTI]
+3 tipologie di utenti: OWNER e PARTECIPANT e VIEWER
+
+OWNER: colui che si registra va a creare una stanza con un codice -> Gestore della stanza.
+PARTECIPANT: colui che si registra ad una stanza -> Partecipa alla stanza.
+VIEWER: colui che si registra solo per visualizzare la stanza -> Partecipa alla stanza solo per visualizzare
+
+[ENTITA]
+STANZA: Raggruppamento di utenti in cui si svolge la partita.
+ROUND: Turno di gioco in cui i PARTECIPANT possono votare per vincere il round puntanto al massimo il loro budget iniziale.
+HISTORY: Lista di ROUND vinti per ogni PARTECIPANT
+
+
+[COME FUNZIONA LA REGISTRAZIONE]
+un OWNER si registra inserendo l'EMAIL e USERNAME e NOME STANZA.
+Un OWNER durante la registrazione della stanza va a definire:
+BUDGET: Punti che ogni PARTECIPANT ha quando si registra ed entra sulla STANZA.
+TIMER: Tempo per la votazione generale tra tutti i PARTECIPANT.
+Si genera un codicestanza.
+Ora accede a /master/{codicestanza}.
+Qui ha 3 zone: 
+-Dashboard per gestire il round. 
+-Tabella con il le statistiche di ogni PARTICANT.
+-Zona per il codice stanza dove può copiare o condividere il codice o eliminarla.
+
+[COME FUNZIONA LA PARTECIPAZIONE]
+L'utente si registra con EMAIL e USERNAME e CODICE STANZA.
+L'utente poi accede alla STANZA e ottiene i punti del BUDGET della stanza.
+
+
+[COME FUNZIONA UN ROUND]
+L'OWNER scrive la domanda (che è solitamente un nome).
+Dopo di che può scegliere se avviare il round.
+Ad ogni PARTECIPANT quindi entra nel ROUND e inizia il countdown del tempo, a <3 secondi il tempo diventa rosso.
+A 0 secondi l'ultimo ad aver votato VINCE il round.
+Ogni PARTECIPANT entrato nel ROUND vede il TIMER scorrere e sotto ha 3 bottoni (+1,+5,+20) + input(number) libero.
+Ogni ROUND ha sempre 1 vincitore.
+Ogni giocatore che punta gioca massimo fino al proprio BUDGET.
+Ogni giocatore che punta va sempre sopra a tutti perchè i PUNTI giocati sono sempre in aggiunta al totale.
+L'ultimo giocatore che ha puntatno viene visualizzato da tutti i partecipanti e relativi punti giocati.
+Il PARTECIPANT che vince vince il ROUND e gli viene salvato nella sua HISTORY.
+La tabella delle statistiche si aggiorna.
+I punti BUDGETT vengono scalati con i punti giocati di chi ha vinto, agli altri vengono ripristinati.
+Un giocatore può votare massimo i suoi PUNTI rimasti.
+
+[IL PARTECIPANT]
+Vede la tabella giocatori + il giocatore che sta vincendo il ROUND.
+
+
+[GENERALE]
+DEve essere tutto realtime
+
+
+
+
+
+
+

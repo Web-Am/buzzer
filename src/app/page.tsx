@@ -20,7 +20,7 @@ const features = [
   {
     icon: Trophy,
     title: 'Strategia',
-    desc: 'Budget punti limitato e buzzer a costo dinamico.'
+    desc: 'Budget crediti limitato e buzzer a costo dinamico.'
   }
 ];
 
@@ -65,7 +65,7 @@ export default function LandingPage() {
 
           <p className="mb-10 text-lg leading-relaxed text-gray-600 sm:text-xl max-w-2xl mx-auto">
             Crea stanze di gioco, sfida i tuoi amici e vinci premendo il buzzer
-            al momento giusto. Gestisci i tuoi punti con strategia!
+            al momento giusto. Gestisci i tuoi crediti con strategia!
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">

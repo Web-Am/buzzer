@@ -1,7 +1,10 @@
+import Header from '@/app/components/shared/Header';
 import Link from 'next/link';
 
 export default function TermsPage() {
     return (
+        <>
+        <Header />
         <main className="max-w-4xl mx-auto p-8">
             <h1 className="text-3xl font-bold mb-4">Termini e Condizioni</h1>
 
@@ -26,5 +29,6 @@ export default function TermsPage() {
                 <Link href="/" className="text-indigo-600 hover:underline">Torna alla home</Link>
             </div>
         </main>
+        </>
     );
 }

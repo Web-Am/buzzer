@@ -9,7 +9,7 @@ import { db } from '@/app/lib/firebase';
 import { sanitizeEmailKey } from '@/app/lib/firebase-utils';
 import { validateJoinRoom } from '@/app/lib/game-logic';
 import { useUIStore } from '@/app/store/uiStore';
-import { Room, Participant } from '@/app/types';
+import { Room } from '@/app/types';
 import { get, ref, update } from 'firebase/database';
 import Header from '@/app/components/shared/Header';
 
@@ -78,38 +78,34 @@ export default function JoinPage() {
                 return;
             }
 
-            if (!room.participants?.[userKey]) {
-                if (mode === 'watch') {
-                    const viewer: Participant = {
+            const existing = room.participants?.[userKey];
+
+            if (mode === 'watch') {
+                await update(roomRef, {
+                    [`participants/${userKey}`]: {
                         name: formData.name,
                         email: formData.email,
-                        pointsTotal: 0,
-                        pointsUsed: 0,
+                        pointsTotal: existing?.pointsTotal ?? 0,
+                        pointsUsed: existing?.pointsUsed ?? 0,
                         isOnline: true,
                         isViewer: true,
-                        roundsWon: []
-                    };
-
-                    await update(roomRef, {
-                        [`participants/${userKey}`]: viewer,
-                        updatedAt: Date.now()
-                    });
-                } else {
-                    const participant: Participant = {
+                        roundsWon: existing?.roundsWon ?? [],
+                    },
+                    updatedAt: Date.now()
+                });
+            } else {
+                await update(roomRef, {
+                    [`participants/${userKey}`]: {
                         name: formData.name,
                         email: formData.email,
-                        pointsTotal: room.settings.totalPoints,
-                        pointsUsed: 0,
+                        pointsTotal: existing?.pointsTotal ?? room.settings.totalPoints,
+                        pointsUsed: existing?.pointsUsed ?? 0,
                         isOnline: true,
                         isViewer: false,
-                        roundsWon: []
-                    };
-
-                    await update(roomRef, {
-                        [`participants/${userKey}`]: participant,
-                        updatedAt: Date.now()
-                    });
-                }
+                        roundsWon: existing?.roundsWon ?? [],
+                    },
+                    updatedAt: Date.now()
+                });
             }
 
             if (mode === 'watch') {

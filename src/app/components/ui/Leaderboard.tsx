@@ -61,7 +61,7 @@ export function Leaderboard({ room }: LeaderboardProps) {
                         {!e.isViewer && (
                             <div className="text-right text-xs">
                                 <div className="font-semibold">{e.roundsWon} round vinti</div>
-                                <div className="text-gray-500">Budget: {e.available}/{e.pointsTotal}</div>
+                                <div className="text-gray-500">Crediti: {e.available}/{e.pointsTotal}</div>
                             </div>
                         )}
                     </div>

@@ -78,7 +78,7 @@ export function WinnerModal({ room }: Props) {
                     <div className="space-y-2 text-center">
                         <p className="text-sm">
                             Hai speso{' '}
-                            <span className="font-semibold">{room.currentRound.winnerPoints} punti</span>
+                            <span className="font-semibold">{room.currentRound.winnerPoints} crediti</span>
                             {' '}per vincere il round.
                         </p>
                         <p className="text-xs text-gray-500">Domanda: {room.currentRound.questionText}</p>
@@ -88,7 +88,7 @@ export function WinnerModal({ room }: Props) {
                         <p className="text-sm">
                             Il vincitore è{' '}
                             <span className="font-semibold">{winnerName ?? 'Sconosciuto'}</span>
-                            {' '}con {room.currentRound.winnerPoints} punti.
+                            {' '}con {room.currentRound.winnerPoints} crediti.
                         </p>
                         <p className="text-xs text-gray-500">Domanda: {room.currentRound.questionText}</p>
                     </div>

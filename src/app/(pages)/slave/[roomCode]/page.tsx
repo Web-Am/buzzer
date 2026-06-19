@@ -2,12 +2,11 @@
 
 import { useTimer } from '@/app/hooks/useTimer';
 import { ConnectionStatus } from '@/app/components/shared/ConnectionStatus';
-import Header from '@/app/components/shared/Header';
+import SlaveHeader from '@/app/components/headers/SlaveHeader';
 import { Buzzer } from '@/app/components/slave/Buzzer';
 import { MiniBuzzer } from '@/app/components/slave/MiniBuzzer';
 import { QuestionDisplay } from '@/app/components/slave/QuestionDisplay';
 import { WinnerModal } from '@/app/components/slave/WinnerModal';
-import { UserDropdown } from '@/app/components/shared/UserDropdown';
 import { Card } from '@/app/components/ui/Card';
 import { Timer } from '@/app/components/ui/Timer';
 import { ParticipantsTable } from '@/app/components/master/PartecipantsTable';
@@ -146,37 +145,20 @@ export default function SlavePage() {
 
     return (
         <>
-            <Header />
+            <SlaveHeader
+                roomCode={roomCode}
+                roomName={room.name}
+                userName={participantName}
+                userEmail={userKey ?? ''}
+                pointsAvail={pointsAvail}
+                userCumulativeBid={userCumulativeBid}
+                pointsRemaining={pointsRemaining}
+                isActive={isActive}
+                onLogout={handleLogout}
+            />
             <div className="min-h-screen bg-gray-50">
                 <ConnectionStatus />
                 <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
-                    {/* Header with user info */}
-                    <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div>
-                                <h1 className="text-xl font-bold text-gray-900">Partecipante</h1>
-                                <div className="flex flex-wrap gap-4 text-sm text-gray-600 mt-1">
-                                    <span>💰 Budget: <strong className="text-green-600">{pointsAvail}</strong></span>
-                                    {isActive && userCumulativeBid > 0 && (
-                                        <span>🎯 Puntata nel round: <strong className="text-orange-600">{userCumulativeBid}</strong></span>
-                                    )}
-                                    {isActive && (
-                                        <span>📊 Rimanenti: <strong className="text-blue-600">{pointsRemaining}</strong></span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
-                                {room.name || 'Stanza'}: {roomCode}
-                            </div>
-                            <UserDropdown
-                                name={participantName}
-                                email={userKey ?? ''}
-                                onLogout={handleLogout}
-                            />
-                        </div>
-                    </header>
 
                     {/* Game Area */}
                     <Card className="p-6">
@@ -198,7 +180,7 @@ export default function SlavePage() {
                                             {room.participants?.[currentWinner.userId]?.name || 'Qualcuno'}
                                         </span>{' '}
                                         sta vincendo con{' '}
-                                        <span className="font-bold">{currentWinner.cumulativeBid}</span> punti
+                                        <span className="font-bold">{currentWinner.cumulativeBid}</span> crediti
                                     </p>
                                 </div>
                             )}
@@ -266,7 +248,7 @@ export default function SlavePage() {
                                     )}
                                     {userCumulativeBid > 0 && (
                                         <p className="text-xs text-gray-500 text-center">
-                                            Devi puntare almeno {minimumCustomBid} punti per superare il vincitore
+                                            Devi puntare almeno {minimumCustomBid} crediti per superare il vincitore
                                         </p>
                                     )}
                                 </div>

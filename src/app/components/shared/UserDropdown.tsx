@@ -8,9 +8,10 @@ interface UserDropdownProps {
     name: string;
     email: string;
     onLogout: () => void;
+    onDelete?: () => void;
 }
 
-export function UserDropdown({ name, email, onLogout }: UserDropdownProps) {
+export function UserDropdown({ name, email, onLogout, onDelete }: UserDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +60,20 @@ export function UserDropdown({ name, email, onLogout }: UserDropdownProps) {
                         </div>
                     </div>
                     <div className="p-2">
+                        {onDelete && (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        setIsOpen(false);
+                                        onDelete();
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                >
+                                    🗑️ Elimina Stanza
+                                </button>
+                                <hr className="my-1 border-gray-100" />
+                            </>
+                        )}
                         <button
                             onClick={() => {
                                 setIsOpen(false);

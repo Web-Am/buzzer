@@ -1,5 +1,6 @@
 'use client';
 
+import Header from '@/app/components/shared/Header';
 import { ConnectionStatus } from '@/app/components/shared/ConnectionStatus';
 import { QuestionDisplay } from '@/app/components/slave/QuestionDisplay';
 import { Card } from '@/app/components/ui/Card';
@@ -39,8 +40,10 @@ export default function SpectatorPage() {
     const viewerName = userKey && room.participants?.[userKey]?.name || 'Spettatore';
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <ConnectionStatus />
+        <>
+            <Header />
+            <div className="min-h-screen bg-gray-50">
+                <ConnectionStatus />
             <main className="container mx-auto px-4 py-8 space-y-6">
                 <header className="flex items-center justify-between">
                     <div>
@@ -74,5 +77,6 @@ export default function SpectatorPage() {
                 </Card>
             </main>
         </div>
+        </>
     );
 }
