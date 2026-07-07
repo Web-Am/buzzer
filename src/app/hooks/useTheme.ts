@@ -6,9 +6,13 @@ type Theme = 'light' | 'dark';
 
 function getInitialTheme(): Theme {
     if (typeof window === 'undefined') return 'light';
-    const stored = localStorage.getItem('theme') as Theme | null;
-    if (stored === 'light' || stored === 'dark') return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    try {
+        const stored = localStorage.getItem('theme') as Theme | null;
+        if (stored === 'light' || stored === 'dark') return stored;
+    } catch { /* localStorage bloccato */ }
+    try {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch { return 'light'; }
 }
 
 function applyTheme(theme: Theme) {
@@ -27,7 +31,7 @@ export function useTheme() {
 
     useEffect(() => {
         applyTheme(theme);
-        localStorage.setItem('theme', theme);
+        try { localStorage.setItem('theme', theme); } catch { /* localStorage bloccato */ }
     }, [theme]);
 
     const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));

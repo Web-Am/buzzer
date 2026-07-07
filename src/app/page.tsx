@@ -9,18 +9,18 @@ import Header from '@/app/components/shared/Header';
 const features = [
   {
     icon: Zap,
-    title: 'Realtime',
-    desc: 'Sincronizzazione istantanea via Firebase Realtime Database.'
+    title: 'Adrenalina Pura',
+    desc: 'Ogni secondo conta. Premi il buzzer al momento giusto e guarda la classifica cambiare in tempo reale.'
   },
   {
     icon: Users,
-    title: 'Multiplayer',
-    desc: 'Master, partecipanti e spettatori in un\'unica stanza.'
+    title: 'Sfida i Tuoi Amici',
+    desc: 'Crea una stanza, condividi il codice e organizza quiz epici. Chi conosce meglio il gruppo vince.'
   },
   {
     icon: Trophy,
-    title: 'Strategia',
-    desc: 'Budget crediti limitato e buzzer a costo dinamico.'
+    title: 'Mosse da Campione',
+    desc: 'Budget limitato, rilanci strategici: non vince chi preme più forte, ma chi punta meglio.'
   }
 ];
 

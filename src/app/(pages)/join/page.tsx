@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -22,7 +22,26 @@ export default function JoinPage() {
     const [mode, setMode] = useState<JoinMode>('play');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [formData, setFormData] = useState({ roomCode: '', name: 'Marco', email: 'andrea.air14@gmail.com' });
+    const [formData, setFormData] = useState({
+        roomCode: '',
+        name: 'Marco',
+        email: 'andrea.air14@gmail.com',
+    });
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('fantaLoginData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                setFormData(prev => ({
+                    ...prev,
+                    roomCode: typeof data.roomCode === 'string' ? data.roomCode : '',
+                    name: typeof data.name === 'string' ? data.name : prev.name,
+                    email: typeof data.email === 'string' ? data.email : prev.email,
+                }));
+            }
+        } catch { /* localStorage bloccato */ }
+    }, []);
 
     const switchMode = (newMode: JoinMode) => {
         setMode(newMode);
@@ -69,6 +88,11 @@ export default function JoinPage() {
             const masterSnap = await get(masterRef);
 
             if (typeof window !== 'undefined') {
+                localStorage.setItem('fantaLoginData', JSON.stringify({
+                    name: formData.name,
+                    email: formData.email,
+                    roomCode: rc,
+                }));
                 localStorage.setItem(`userEmail_${rc}`, formData.email);
             }
 

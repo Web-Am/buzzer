@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -16,10 +16,27 @@ export default function RegisterPage() {
     const { isCreatingRoom } = useUIStore();
 
     const [formData, setFormData] = useState({
-        name: 'Andrea', roomName: 'Fanta Quiz',
+        name: 'Andrea',
+        roomName: 'Fanta Quiz',
         email: 'andrea.air144@gmail.com',
-        totalPoints: 300, timerCountdown: 10,
+        totalPoints: 300,
+        timerCountdown: 10,
     });
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('fantaLoginData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                setFormData(prev => ({
+                    ...prev,
+                    name: typeof data.name === 'string' ? data.name : prev.name,
+                    roomName: typeof data.roomName === 'string' ? data.roomName : prev.roomName,
+                    email: typeof data.email === 'string' ? data.email : prev.email,
+                }));
+            }
+        } catch { /* localStorage bloccato */ }
+    }, []);
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -46,6 +63,12 @@ export default function RegisterPage() {
             return;
         }
 
+        localStorage.setItem('fantaLoginData', JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            roomName: formData.roomName,
+            roomCode,
+        }));
         localStorage.setItem(`userEmail_${roomCode}`, formData.email);
         router.push(`/master/${roomCode}`);
     };

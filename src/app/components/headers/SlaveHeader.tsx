@@ -37,8 +37,8 @@ export default function SlaveHeader({
                     <div className="flex items-center gap-4 min-w-0">
                         <Link href="/">
                             <div className="flex items-center gap-2">
-                                <Image src="/logo.png" alt="Fanta Buzzer" width={28} height={28} className="rounded-lg" />
-                                <h1 className="text-lg font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent hidden sm:block">
+                                <Image src="/logo.png" alt="Fanta Buzzer" width={32} height={32} className="rounded-lg" />
+                                <h1 className="text-lg font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                                     Fanta Buzzer
                                 </h1>
                             </div>
