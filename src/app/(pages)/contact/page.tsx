@@ -75,7 +75,7 @@ export default function ContactPage() {
         <main className="max-w-3xl mx-auto p-6">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                 <h1 className="text-2xl font-bold mb-2">Contattaci</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Hai bisogno di assistenza o vuoi suggerire una funzionalità? Scrivici qui.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-300 mb-4">Hai bisogno di assistenza o vuoi suggerire una funzionalità? Scrivici qui.</p>
 
                 <form onSubmit={submit} className="space-y-4">
                     <div>

@@ -44,6 +44,7 @@ export function Timer({ remainingMs, totalMs }: TimerProps) {
                         stroke="#e5e7eb"
                         strokeWidth="10"
                         fill="none"
+                        className="dark:stroke-gray-600"
                     />
                     <circle
                         cx="50"
@@ -67,7 +68,7 @@ export function Timer({ remainingMs, totalMs }: TimerProps) {
                     </span>
                 </div>
             </div>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Tempo rimanente</p>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-300">Tempo rimanente</p>
         </div>
     );
 }

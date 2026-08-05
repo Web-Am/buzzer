@@ -6,11 +6,11 @@ import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { Input } from '@/app/components/ui/Input';
 import { db } from '@/app/lib/firebase';
-import { sanitizeEmailKey } from '@/app/lib/firebase-utils';
+import { participantRef, sanitizeEmailKey } from '@/app/lib/firebase-utils';
 import { validateJoinRoom } from '@/app/lib/game-logic';
 import { useUIStore } from '@/app/store/uiStore';
 import { Room } from '@/app/types';
-import { get, ref, update } from 'firebase/database';
+import { get, onDisconnect, ref, runTransaction, serverTimestamp, update } from 'firebase/database';
 import Header from '@/app/components/shared/Header';
 
 type JoinMode = 'play' | 'watch';
@@ -24,8 +24,8 @@ export default function JoinPage() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         roomCode: '',
-        name: 'Marco',
-        email: 'andrea.air14@gmail.com',
+        name: '',
+        email: '',
     });
 
     useEffect(() => {
@@ -47,8 +47,8 @@ export default function JoinPage() {
         setMode(newMode);
         setFormData((prev) => ({
             ...prev,
-            email: newMode === 'play' ? 'andrea.air14@gmail.com' : 'andrea.air1@gmail.com',
-            name: newMode === 'play' ? 'Marco' : 'Luca'
+            email: '',
+            name: ''
         }));
         setErrors({});
         setErrorMessage(null);
@@ -87,6 +87,58 @@ export default function JoinPage() {
             const masterRef = ref(db, `masters/${userKey}`);
             const masterSnap = await get(masterRef);
 
+            if (masterSnap.exists()) {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('fantaLoginData', JSON.stringify({
+                        name: formData.name,
+                        email: formData.email,
+                        roomCode: rc,
+                    }));
+                    localStorage.setItem(`userEmail_${rc}`, formData.email);
+                }
+                setIsJoiningRoom(false);
+                router.push(`/master/${masterSnap.val().room}`);
+                return;
+            }
+
+            const isViewer = mode === 'watch';
+            const participantNodeRef = participantRef(rc, userKey);
+
+            const transactionResult = await runTransaction(participantNodeRef, (current) => {
+                if (current && current.isOnline === true) {
+                    return undefined;
+                }
+
+                const preserved = current ?? {};
+
+                return {
+                    name: formData.name,
+                    email: formData.email,
+                    pointsTotal: isViewer
+                        ? (preserved.pointsTotal ?? 0)
+                        : (preserved.pointsTotal ?? room.settings.totalPoints),
+                    pointsUsed: preserved.pointsUsed ?? 0,
+                    isOnline: true,
+                    isViewer,
+                    roundsWon: preserved.roundsWon ?? [],
+                    updatedAt: Date.now(),
+                };
+            });
+
+            if (!transactionResult.committed) {
+                setErrorMessage('Questa email è già connessa a questa stanza. Chiudi l\'altra sessione e riprova.');
+                return;
+            }
+
+            onDisconnect(participantNodeRef)
+                .update({
+                    isOnline: false,
+                    updatedAt: serverTimestamp(),
+                })
+                .catch(() => {});
+
+            update(roomRef, { updatedAt: Date.now() }).catch(() => {});
+
             if (typeof window !== 'undefined') {
                 localStorage.setItem('fantaLoginData', JSON.stringify({
                     name: formData.name,
@@ -96,43 +148,7 @@ export default function JoinPage() {
                 localStorage.setItem(`userEmail_${rc}`, formData.email);
             }
 
-            if (masterSnap.exists()) {
-                setIsJoiningRoom(false);
-                router.push(`/master/${masterSnap.val().room}`);
-                return;
-            }
-
-            const existing = room.participants?.[userKey];
-
-            if (mode === 'watch') {
-                await update(roomRef, {
-                    [`participants/${userKey}`]: {
-                        name: formData.name,
-                        email: formData.email,
-                        pointsTotal: existing?.pointsTotal ?? 0,
-                        pointsUsed: existing?.pointsUsed ?? 0,
-                        isOnline: true,
-                        isViewer: true,
-                        roundsWon: existing?.roundsWon ?? [],
-                    },
-                    updatedAt: Date.now()
-                });
-            } else {
-                await update(roomRef, {
-                    [`participants/${userKey}`]: {
-                        name: formData.name,
-                        email: formData.email,
-                        pointsTotal: existing?.pointsTotal ?? room.settings.totalPoints,
-                        pointsUsed: existing?.pointsUsed ?? 0,
-                        isOnline: true,
-                        isViewer: false,
-                        roundsWon: existing?.roundsWon ?? [],
-                    },
-                    updatedAt: Date.now()
-                });
-            }
-
-            if (mode === 'watch') {
+            if (isViewer) {
                 router.push(`/spectator/${rc}`);
             } else {
                 router.push(`/slave/${rc}`);
@@ -147,7 +163,7 @@ export default function JoinPage() {
 
     return <>
         <Header />
-        <div className="flex items-center justify-center p-4">
+        <div className="flex items-center justify-center min-h-[calc(100vh-56px)] bg-gradient-to-br from-primary-50 dark:from-primary-950 via-white dark:via-gray-900 to-secondary-50 dark:to-secondary-950 p-4">
             <Card className="w-full max-w-md">
                 <h1 className="mb-6 text-2xl font-bold">
                     {mode === 'play' ? 'Entra in una Stanza' : 'Guarda una Stanza'}
@@ -160,7 +176,7 @@ export default function JoinPage() {
 onClick={() => switchMode('play')}
                          className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${mode === 'play'
                             ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                            : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                     >
                         Partecipa
@@ -170,7 +186,7 @@ onClick={() => switchMode('play')}
                         onClick={() => switchMode('watch')}
                         className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${mode === 'watch'
                             ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                            : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                     >
                         Solo Visualizzazione
@@ -178,7 +194,7 @@ onClick={() => switchMode('play')}
                 </div>
 
                 {mode === 'watch' && (
-                    <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                    <p className="mb-4 text-sm text-gray-500 dark:text-gray-300">
                         Potrai vedere la domanda, la classifica e i punteggi in tempo reale, senza poter votare.
                     </p>
                 )}

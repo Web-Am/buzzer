@@ -7,7 +7,7 @@ interface Props {
 export function QuestionDisplay({ round }: Props) {
     if (!round) {
         return (
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-center text-sm text-gray-500 dark:text-gray-300">
                 In attesa che il Master avvii un nuovo round...
             </p>
         );

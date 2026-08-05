@@ -9,13 +9,13 @@ export default function PrivacyPolicy() {
         <>
             <Header />
             <main className="max-w-4xl mx-auto px-4 py-10 sm:px-8">
-                <Link href="/" className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 mb-6 transition-colors">
+                <Link href="/" className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-300 hover:text-primary-600 mb-6 transition-colors">
                     <ArrowLeft size={16} />
                     Torna alla home
                 </Link>
 
                 <h1 className="text-3xl font-bold mb-1">Informativa sulla Privacy</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Ultimo aggiornamento: {lastUpdate}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-300 mb-8">Ultimo aggiornamento: {lastUpdate}</p>
 
                 <div className="space-y-8 leading-relaxed text-gray-800 dark:text-gray-200">
 
@@ -65,7 +65,7 @@ export default function PrivacyPolicy() {
                                 {' '}di Google.
                             </li>
                         </ul>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-300">
                             <strong>Nota:</strong> Fanta Buzzer <em>non</em> raccoglie dati biometrici, dati
                             sanitari, né dati relativi a condanne penali. L'applicazione non è destinata a utenti
                             di età inferiore a 14 anni e il Titolare non raccoglie consapevolmente dati personali
@@ -277,7 +277,7 @@ export default function PrivacyPolicy() {
                 </div>
 
                 <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <Link href="/" className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 transition-colors">
+                    <Link href="/" className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-300 hover:text-primary-600 transition-colors">
                         <ArrowLeft size={16} />
                         Torna alla home
                     </Link>

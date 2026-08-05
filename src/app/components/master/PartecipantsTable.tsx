@@ -1,16 +1,32 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, HelpCircle, Coins, Calendar } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronDown, HelpCircle, Coins, Calendar, Trash2 } from 'lucide-react';
 import { Room, Participant } from "@/app/types";
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { ref, update } from 'firebase/database';
+import { ref, remove, update } from 'firebase/database';
 import { db } from '@/app/lib/firebase';
+import { participantRef, pressRef, currentRoundRef } from '@/app/lib/firebase-utils';
 import { useRoomStore } from '@/app/store/roomStore';
 
 interface Props {
     room: Room;
+}
+
+function ParticipantEmailRow({ isOnline, email }: { isOnline: boolean; email: string }) {
+    return (
+        <div className="flex items-center justify-between w-full">
+            <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-500 dark:text-gray-300 uppercase">Email</p>
+                <p className="font-semibold text-sm break-all">{email}</p>
+            </div>
+            <span className={`ml-3 h-3 w-3 rounded-full shrink-0 ${
+                isOnline ? 'bg-emerald-500' : 'bg-red-500'
+            }`} />
+        </div>
+    );
 }
 
 export function ParticipantsTable({ room }: Props) {
@@ -18,7 +34,15 @@ export function ParticipantsTable({ room }: Props) {
     const [selectedParticipant, setSelectedParticipant] = useState<{ key: string; data: Participant } | null>(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [roundsExpanded, setRoundsExpanded] = useState(false);
+    const [swiped, setSwiped] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const participants = Object.entries(room.participants ?? {});
+
+    const liveSelected = selectedParticipant
+        ? (room.participants?.[selectedParticipant.key] ?? null)
+        : null;
+    const isOnlineSelected = liveSelected?.isOnline === true;
+    const displayedIsOnline = liveSelected ? liveSelected.isOnline : (selectedParticipant?.data.isOnline ?? false);
 
     const handleResetRounds = async () => {
         if (!roomCode || !selectedParticipant) return;
@@ -28,6 +52,26 @@ export function ParticipantsTable({ room }: Props) {
         });
         setShowResetConfirm(false);
         setSelectedParticipant(null);
+    };
+
+    const handleDeleteParticipant = async () => {
+        if (!roomCode || !selectedParticipant) return;
+        if (liveSelected?.isOnline) return;
+
+        try {
+            const { key } = selectedParticipant;
+            await remove(participantRef(roomCode, key));
+            await remove(pressRef(roomCode, key));
+            if (room.currentRound?.winner === key) {
+                await update(currentRoundRef(roomCode), { winner: null, winnerPoints: null });
+            }
+            setShowDeleteConfirm(false);
+            setSelectedParticipant(null);
+            setSwiped(false);
+        } catch (err) {
+            console.error('Errore eliminazione partecipante:', err);
+            alert('Errore durante l\'eliminazione del partecipante.');
+        }
     };
 
     return (
@@ -49,11 +93,14 @@ export function ParticipantsTable({ room }: Props) {
                             const avail = p.pointsTotal - used;
                             const isOnline = p.isOnline;
                             return (
-                                <tr key={key} className="border-t cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" onClick={() => setSelectedParticipant({ key, data: p })}>
+                                <tr key={key} className="border-t cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" onClick={() => {
+                                    setSelectedParticipant({ key, data: p });
+                                    setSwiped(false);
+                                }}>
                                     <td className="px-3 py-2">{p.name}</td>
                                     <td className="px-3 py-2 text-center">
                                         {p.isViewer ? (
-                                            <span className="inline-block rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                                            <span className="inline-block rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-300">
                                                 Viewer
                                             </span>
                                         ) : (
@@ -73,7 +120,7 @@ export function ParticipantsTable({ room }: Props) {
                         {participants.length === 0 && (
                             <tr>
                                 <td
-                                    className="px-3 py-4 text-center text-gray-500 dark:text-gray-400"
+                                    className="px-3 py-4 text-center text-gray-500 dark:text-gray-300"
                                     colSpan={4} >
                                     Ancora nessun partecipante.
                                 </td>
@@ -86,7 +133,10 @@ export function ParticipantsTable({ room }: Props) {
             {/* Modal dettagli partecipante */}
             <Modal
                 open={!!selectedParticipant}
-                onClose={() => setSelectedParticipant(null)}
+                onClose={() => {
+                    setSelectedParticipant(null);
+                    setSwiped(false);
+                }}
                 title={`Dettagli: ${selectedParticipant?.data.name}`}
                 footer={
                     role === 'master' && selectedParticipant && !selectedParticipant.data.isViewer && (
@@ -102,32 +152,85 @@ export function ParticipantsTable({ room }: Props) {
             >
                     {selectedParticipant && (
                     <div className="space-y-4">
-                        {/* Email + connection dot */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Email</p>
-                                <p className="font-semibold text-sm break-all">{selectedParticipant.data.email}</p>
-                            </div>
-                            <span className={`ml-3 h-3 w-3 rounded-full shrink-0 ${
-                                selectedParticipant.data.isOnline ? 'bg-emerald-500' : 'bg-red-500'
-                            }`} />
-                        </div>
+                        {/* Email + connection dot (master: swipe left per eliminare) */}
+                        {role === 'master' ? (
+                            <motion.div
+                                drag="x"
+                                dragConstraints={{ left: 0, right: 0 }}
+                                dragElastic={0.2}
+                                onDragEnd={(_, info) => {
+                                    if (info.offset.x < -80) {
+                                        setSwiped(true);
+                                    } else if (info.offset.x > 80) {
+                                        setSwiped(false);
+                                    }
+                                }}
+                                animate={{ x: 0 }}
+                                className="flex items-center justify-between touch-none cursor-grab active:cursor-grabbing"
+                            >
+                                <AnimatePresence mode="wait" initial={false}>
+                                    {swiped ? (
+                                        <motion.div
+                                            key="delete"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="w-full"
+                                        >
+                                            <button
+                                                type="button"
+                                                disabled={isOnlineSelected}
+                                                onClick={() => setShowDeleteConfirm(true)}
+                                                className={`flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                                                    isOnlineSelected
+                                                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                                        : 'bg-red-600 text-white hover:bg-red-700'
+                                                }`}
+                                            >
+                                                <Trash2 size={16} />
+                                                {isOnlineSelected ? 'Utente connesso' : 'ELIMINA'}
+                                            </button>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key="email"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="w-full"
+                                        >
+                                            <ParticipantEmailRow
+                                                isOnline={displayedIsOnline}
+                                                email={selectedParticipant.data.email}
+                                            />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        ) : (
+                            <ParticipantEmailRow
+                                isOnline={displayedIsOnline}
+                                email={selectedParticipant.data.email}
+                            />
+                        )}
 
                         <hr />
 
                         {/* Credits + Role */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Crediti</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-300 uppercase">Crediti</p>
                                 <p className="font-semibold text-sm">
                                     {selectedParticipant.data.pointsTotal - (selectedParticipant.data.pointsUsed || 0)} / {selectedParticipant.data.pointsTotal}
                                 </p>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Ruolo</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-300 uppercase">Ruolo</p>
                                 <p className="font-semibold text-sm">
                                     {selectedParticipant.data.isViewer ? (
-                                        <span className="text-gray-500 dark:text-gray-400">Spettatore</span>
+                                        <span className="text-gray-500 dark:text-gray-300">Spettatore</span>
                                     ) : (
                                         <span className="text-blue-600 dark:text-blue-400">Giocatore</span>
                                     )}
@@ -156,7 +259,7 @@ export function ParticipantsTable({ room }: Props) {
                             {roundsExpanded && (
                                 <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
                                     {(!selectedParticipant.data.roundsWon || selectedParticipant.data.roundsWon.length === 0) ? (
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 italic">Nessun round vinto ancora</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-300 italic">Nessun round vinto ancora</p>
                                     ) : (
                                         selectedParticipant.data.roundsWon.map((round, idx) => (
                                             <div key={idx} className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-purple-50 dark:to-purple-900/30 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
@@ -164,11 +267,11 @@ export function ParticipantsTable({ room }: Props) {
                                                     <HelpCircle size={16} className="inline mr-1 text-blue-500 -mt-0.5" />
                                                     {round.questionText}
                                                 </p>
-                                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                                <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                                                     <Coins size={14} className="inline mr-1 text-orange-500 -mt-0.5" />
                                                     Spesi: <span className="font-bold text-orange-600">{round.pointsAwarded}</span> crediti
                                                 </p>
-                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                <p className="text-xs text-gray-400 dark:text-gray-300 mt-1">
                                                     <Calendar size={14} className="inline mr-1 text-gray-400 -mt-0.5" />
                                                     {new Date(round.timestamp).toLocaleString('it-IT')}
                                                 </p>
@@ -194,12 +297,38 @@ export function ParticipantsTable({ room }: Props) {
                     </>
                 }
             >
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                     Sei sicuro di voler resettare tutti i round vinti di{' '}
                     <strong className="text-gray-900 dark:text-gray-100">{selectedParticipant?.data.name}</strong>?
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">
                     Questa azione cancellerà la cronologia delle vittorie e ripristinerà tutti i crediti spesi.
+                </p>
+            </Modal>
+
+            {/* Modal conferma eliminazione */}
+            <Modal
+                open={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                title="Eliminare partecipante?"
+                footer={
+                    <>
+                        <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)}>Annulla</Button>
+                        <Button
+                            onClick={handleDeleteParticipant}
+                            disabled={isOnlineSelected}
+                            className="bg-red-600 text-white hover:bg-red-700"
+                        >
+                            Conferma Eliminazione
+                        </Button>
+                    </>
+                }
+            >
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Vuoi cancellare <strong className="text-gray-900 dark:text-gray-100">{selectedParticipant?.data.name}</strong> dalla stanza?
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">
+                    Verranno eliminati anche tutti i suoi dati (round vinti, crediti spesi e pressioni). Questa azione è irreversibile.
                 </p>
             </Modal>
         </div>

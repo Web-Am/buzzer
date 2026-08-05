@@ -26,6 +26,7 @@ export interface Participant {
     pointsTotal: number;
     pointsUsed: number;
     roundsWon: RoundWon[];
+    updatedAt?: number;
 }
 
 export interface Room {

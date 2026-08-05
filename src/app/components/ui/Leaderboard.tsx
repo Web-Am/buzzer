@@ -48,12 +48,12 @@ export function Leaderboard({ room }: LeaderboardProps) {
                                 <div className="text-sm font-medium">
                                     {e.name}
                                     {e.isViewer && (
-                                        <span className="ml-2 inline-block rounded-full bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                                        <span className="ml-2 inline-block rounded-full bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-300">
                                             Viewer
                                         </span>
                                     )}
                                 </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                <div className="text-xs text-gray-500 dark:text-gray-300">
                                     {desanitizeEmailKey(e.key)}
                                 </div>
                             </div>
@@ -61,13 +61,13 @@ export function Leaderboard({ room }: LeaderboardProps) {
                         {!e.isViewer && (
                             <div className="text-right text-xs">
                                 <div className="font-semibold">{e.roundsWon} round vinti</div>
-                                <div className="text-gray-500 dark:text-gray-400">Crediti: {e.available}/{e.pointsTotal}</div>
+                                <div className="text-gray-500 dark:text-gray-300">Crediti: {e.available}/{e.pointsTotal}</div>
                             </div>
                         )}
                     </div>
                 ))}
                 {entries.length === 0 && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Ancora nessun partecipante.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">Ancora nessun partecipante.</p>
                 )}
             </div>
         </div>

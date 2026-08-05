@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { desanitizeEmailKey } from '@/app/lib/firebase-utils';
+import { Trash2, LogOut, ChevronDown } from 'lucide-react';
 
 interface UserDropdownProps {
     name: string;
@@ -33,24 +33,17 @@ export function UserDropdown({ name, email, onLogout, onDelete }: UserDropdownPr
                 className="flex items-center space-x-2 p-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 aria-label="User menu"
             >
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                     {name.charAt(0).toUpperCase()}
                 </div>
-                <svg
-                    className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                            <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center text-white font-semibold">
                                 {name.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -59,7 +52,7 @@ export function UserDropdown({ name, email, onLogout, onDelete }: UserDropdownPr
                             </div>
                         </div>
                     </div>
-                    <div className="p-2">
+                    <div className="p-1.5">
                         {onDelete && (
                             <>
                                 <button
@@ -67,11 +60,12 @@ export function UserDropdown({ name, email, onLogout, onDelete }: UserDropdownPr
                                         setIsOpen(false);
                                         onDelete();
                                     }}
-className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
+                                    className="w-full flex items-center gap-2.5 text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                 >
-                                    🗑️ Elimina Stanza
+                                    <Trash2 size={16} />
+                                    Elimina Stanza
                                 </button>
-                                <hr className="my-1 border-gray-100 dark:border-gray-700" />
+                                <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
                             </>
                         )}
                         <button
@@ -79,9 +73,10 @@ className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:
                                 setIsOpen(false);
                                 onLogout();
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                            className="w-full flex items-center gap-2.5 text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                         >
-                            🚪 Logout
+                            <LogOut size={16} />
+                            Logout
                         </button>
                     </div>
                 </div>

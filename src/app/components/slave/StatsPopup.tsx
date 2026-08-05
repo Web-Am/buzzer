@@ -34,7 +34,7 @@ export function StatsPopup() {
                     </div>
                     <button
                         onClick={() => setStatsPopupOpen(false)}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                        className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-200 transition-colors"
                     >
                         <X size={24} />
                     </button>
@@ -61,7 +61,7 @@ export function StatsPopup() {
                                             <h3 className="font-bold text-gray-900 dark:text-white">
                                                 {participant.name}
                                             </h3>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            <p className="text-sm text-gray-500 dark:text-gray-300">
                                                 {participant.roundsWonCount} round{' '}
                                                 {participant.roundsWonCount === 1 ? 'vinto' : 'vinti'}
                                             </p>
@@ -72,7 +72,7 @@ export function StatsPopup() {
                                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
                                             {participant.availablePoints}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        <p className="text-xs text-gray-500 dark:text-gray-300">
                                             / {participant.pointsTotal}
                                         </p>
                                     </div>
@@ -108,7 +108,7 @@ export function StatsPopup() {
                                                         {round.questionText}
                                                     </p>
                                                     <div className="flex items-center justify-between mt-1">
-                                                        <span className="text-gray-500 dark:text-gray-400 text-xs">
+                                                        <span className="text-gray-500 dark:text-gray-300 text-xs">
                                                             {new Date(round.timestamp).toLocaleTimeString('it-IT')}
                                                         </span>
                                                         <span className="text-primary-600 dark:text-primary-400 font-bold text-xs">
@@ -122,7 +122,7 @@ export function StatsPopup() {
                                 )}
 
                                 {participant.roundsWon.length === 0 && (
-                                    <p className="text-sm text-gray-400 dark:text-gray-500 italic">
+                                    <p className="text-sm text-gray-400 dark:text-gray-300 italic">
                                         Nessun round vinto ancora
                                     </p>
                                 )}

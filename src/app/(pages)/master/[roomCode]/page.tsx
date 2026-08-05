@@ -59,7 +59,14 @@ export default function MasterPage() {
             setUserKey(stored);
     }, [roomCode]);
 
-    if (loading) return <p className="p-4">Caricamento...</p>;
+    if (loading) return (
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+            <div className="flex flex-col items-center gap-3">
+                <div className="h-8 w-8 animate-spin rounded-full border-3 border-primary-500 border-t-transparent" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">Caricamento...</p>
+            </div>
+        </div>
+    );
     if (!room) return <p className="p-4">Stanza non trovata.</p>;
 
     const masterName = (userKey && room.participants?.[userKey]?.name) || 'Master';
@@ -74,7 +81,7 @@ export default function MasterPage() {
             onLogout={handleLogout}
             onDeleteRoom={() => setShowDeleteModal(true)}
         />
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
             <ConnectionStatus />
             <main className="container mx-auto space-y-6 px-4 py-8 max-w-7xl">
 
@@ -97,7 +104,7 @@ export default function MasterPage() {
             title="Eliminare la stanza?"
         >
             <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                     Sei sicuro di voler eliminare la stanza <strong>{roomCode}</strong>?
                     Tutti i dati, crediti e cronologie andranno persi.
                 </p>

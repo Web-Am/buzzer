@@ -33,7 +33,7 @@ export function RoundRanking({ room }: Props) {
 
     if (!room.currentRound) {
         return (
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">
+            <p className="text-center text-sm text-gray-500 dark:text-gray-300 py-8">
                 In attesa che il Master avvii un nuovo round...
             </p>
         );
@@ -43,7 +43,7 @@ export function RoundRanking({ room }: Props) {
         <div>
             <h3 className="text-lg font-semibold mb-3">Classifica Round</h3>
             {!rankings ? (
-                <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
+                <p className="text-center text-sm text-gray-500 dark:text-gray-300 py-4">
                     Nessuna votazione ancora. Premi il buzzer!
                 </p>
             ) : (
@@ -76,7 +76,7 @@ export function RoundRanking({ room }: Props) {
                             <span className={`font-mono font-bold text-sm ${
                                 idx === 0
                                     ? 'text-yellow-700 dark:text-yellow-300'
-                                    : 'text-gray-600 dark:text-gray-400'
+                                    : 'text-gray-600 dark:text-gray-300'
                             }`}>
                                 {entry.cumulativeBid} crediti
                             </span>

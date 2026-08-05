@@ -12,12 +12,12 @@ import { Timer } from '@/app/components/ui/Timer';
 import { ParticipantsTable } from '@/app/components/master/PartecipantsTable';
 import { Button } from '@/app/components/ui/Button';
 import { useBuzzer } from '@/app/hooks/useBuzzer';
-import { usePageLeave } from '@/app/hooks/useLeave';
+import { usePresence } from '@/app/hooks/usePresence';
 import { useRoom } from '@/app/hooks/useRoom';
-import { db } from '@/app/lib/firebase';
 import { canUserBid, getCurrentWinner, getCumulativeBid, getMinimumToOutbid } from '@/app/lib/game-logic';
+import { participantRef } from '@/app/lib/firebase-utils';
 import { useRoomStore } from '@/app/store/roomStore';
-import { ref, update } from 'firebase/database';
+import { update } from 'firebase/database';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -39,14 +39,11 @@ export default function SlavePage() {
     );
 
     const handleLogout = () => {
+        if (userKey && roomCode) {
+            update(participantRef(roomCode, userKey), { isOnline: false }).catch(() => {});
+        }
         localStorage.removeItem(`userEmail_${roomCode}`);
         router.push('/');
-    };
-
-    const SyncStatusOnline = async (online: boolean) => {
-        if (!userKey) return;
-        const roomRef = ref(db, `rooms/${roomCode}/participants/${userKey}`);
-        await update(roomRef, { isOnline: online, updatedAt: Date.now() });
     };
 
     useEffect(() => {
@@ -64,16 +61,7 @@ export default function SlavePage() {
         }
     }, [roomCode, router, setRoomCode, setRole, setUserKey]);
 
-    useEffect(() => {
-        if (userKey) SyncStatusOnline(true);
-    }, [userKey]);
-
-    usePageLeave(
-        () => {
-            SyncStatusOnline(false);
-        },
-        { onUnmount: true, confirmBeforeLeave: false }
-    );
+    usePresence(roomCode, userKey);
 
     const gameState = useMemo(() => {
         if (!room || !userKey) {
@@ -127,7 +115,14 @@ export default function SlavePage() {
         };
     }, [room, userKey, customAmount]);
 
-    if (loading) return <p className="p-4">Caricamento...</p>;
+    if (loading) return (
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+            <div className="flex flex-col items-center gap-3">
+                <div className="h-8 w-8 animate-spin rounded-full border-3 border-primary-500 border-t-transparent" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">Caricamento...</p>
+            </div>
+        </div>
+    );
     if (!room) return <p className="p-4">Stanza non trovata.</p>;
 
     const { round, participant, canPressButtons, costs, currentWinner, userCumulativeBid, isActive } = gameState;
@@ -156,7 +151,7 @@ export default function SlavePage() {
                 isActive={isActive}
                 onLogout={handleLogout}
             />
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
                 <ConnectionStatus />
                 <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
 
@@ -220,7 +215,7 @@ export default function SlavePage() {
 
                                 {/* Custom bid input */}
                                 <div className="w-full max-w-xs space-y-2">
-                                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 text-center">
+                                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 text-center">
                                         Puntata personalizzata
                                     </label>
                                     <div className="flex gap-2">
@@ -247,7 +242,7 @@ export default function SlavePage() {
                                         </p>
                                     )}
                                     {userCumulativeBid > 0 && (
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                                        <p className="text-xs text-gray-500 dark:text-gray-300 text-center">
                                             Devi puntare almeno {minimumCustomBid} crediti per superare il vincitore
                                         </p>
                                     )}

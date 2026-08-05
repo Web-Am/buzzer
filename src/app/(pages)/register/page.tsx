@@ -16,9 +16,9 @@ export default function RegisterPage() {
     const { isCreatingRoom } = useUIStore();
 
     const [formData, setFormData] = useState({
-        name: 'Andrea',
-        roomName: 'Fanta Quiz',
-        email: 'andrea.air144@gmail.com',
+        name: '',
+        roomName: '',
+        email: '',
         totalPoints: 300,
         timerCountdown: 10,
     });
@@ -75,7 +75,7 @@ export default function RegisterPage() {
 
     return <>
         <Header />
-        <div className="flex items-center justify-center p-4">
+        <div className="flex items-center justify-center min-h-[calc(100vh-56px)] bg-gradient-to-br from-primary-50 dark:from-primary-950 via-white dark:via-gray-900 to-secondary-50 dark:to-secondary-950 p-4">
             <Card className="w-full max-w-md">
                 <h1 className="mb-6 text-2xl font-bold">Crea Stanza</h1>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -113,7 +113,7 @@ export default function RegisterPage() {
                     />
 
                     <div>
-                        <label className="mb-2 block text-sm font-medium dark:text-gray-300">
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Budget Punti: {formData.totalPoints}
                         </label>
                         <input
@@ -133,7 +133,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label className="mb-2 block text-sm font-medium dark:text-gray-300">
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Timer: {formData.timerCountdown} secondi
                         </label>
                         <input

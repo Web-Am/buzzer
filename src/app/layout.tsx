@@ -4,7 +4,7 @@ import { Poppins } from 'next/font/google';
 import { Analytics } from "@vercel/analytics/next"
 const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700']
+  weight: ['400', '500', '600', '700', '900']
 });
 
 export const viewport: Viewport = {
