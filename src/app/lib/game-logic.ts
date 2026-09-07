@@ -22,8 +22,8 @@ export function calculatePointsUsed(participant: {
     pointsUsed: number;
     roundsWon?: Array<{ pointsAwarded: number }>;
 }): number {
-    if (!participant.roundsWon?.length) return participant.pointsUsed || 0;
-    return participant.roundsWon.reduce((sum, r) => sum + r.pointsAwarded, 0);
+    if (!participant.roundsWon) return participant.pointsUsed || 0;
+    return participant.roundsWon.reduce((sum, r) => sum + (r.pointsAwarded || 0), 0);
 }
 
 export function getPointsAvailable(participant: {

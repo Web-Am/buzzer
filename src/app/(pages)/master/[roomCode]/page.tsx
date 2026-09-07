@@ -2,7 +2,6 @@
 
 import { ParticipantsTable } from '@/app/components/master/PartecipantsTable';
 import { RoundControl } from '@/app/components/master/RoundControl';
-import { ConnectionStatus } from '@/app/components/shared/ConnectionStatus';
 import MasterHeader from '@/app/components/headers/MasterHeader';
 import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
@@ -82,7 +81,6 @@ export default function MasterPage() {
             onDeleteRoom={() => setShowDeleteModal(true)}
         />
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-            <ConnectionStatus />
             <main className="container mx-auto space-y-6 px-4 py-8 max-w-7xl">
 
                 <div className="grid gap-6 lg:grid-cols-1">

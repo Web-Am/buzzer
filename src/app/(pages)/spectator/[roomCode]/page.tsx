@@ -1,6 +1,5 @@
 'use client';
 
-import { ConnectionStatus } from '@/app/components/shared/ConnectionStatus';
 import { QuestionDisplay } from '@/app/components/slave/QuestionDisplay';
 import { Card } from '@/app/components/ui/Card';
 import { ParticipantsTable } from '@/app/components/master/PartecipantsTable';
@@ -63,7 +62,6 @@ export default function SpectatorPage() {
                 onLogout={handleLogout}
             />
             <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-                <ConnectionStatus />
                 <main className="container mx-auto px-4 py-8 space-y-6">
                     <div className="grid gap-6 md:grid-cols-[2fr_1.5fr]">
                         <Card>

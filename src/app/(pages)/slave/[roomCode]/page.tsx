@@ -1,12 +1,12 @@
 'use client';
 
 import { useTimer } from '@/app/hooks/useTimer';
-import { ConnectionStatus } from '@/app/components/shared/ConnectionStatus';
 import SlaveHeader from '@/app/components/headers/SlaveHeader';
 import { Buzzer } from '@/app/components/slave/Buzzer';
 import { MiniBuzzer } from '@/app/components/slave/MiniBuzzer';
 import { QuestionDisplay } from '@/app/components/slave/QuestionDisplay';
 import { WinnerModal } from '@/app/components/slave/WinnerModal';
+import { Coins, Target } from 'lucide-react';
 import { Card } from '@/app/components/ui/Card';
 import { Timer } from '@/app/components/ui/Timer';
 import { ParticipantsTable } from '@/app/components/master/PartecipantsTable';
@@ -145,18 +145,25 @@ export default function SlavePage() {
                 roomName={room.name}
                 userName={participantName}
                 userEmail={userKey ?? ''}
-                pointsAvail={pointsAvail}
-                userCumulativeBid={userCumulativeBid}
-                pointsRemaining={pointsRemaining}
-                isActive={isActive}
                 onLogout={handleLogout}
             />
             <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-                <ConnectionStatus />
                 <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
 
                     {/* Game Area */}
                     <Card className="p-6">
+                        <div className="flex items-center gap-2 text-sm mb-4">
+                            <span className="flex items-center gap-1.5 text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/30 px-2.5 py-1 rounded-full font-semibold">
+                                <Coins size={14} />
+                                {pointsAvail}
+                            </span>
+                            {isActive && userCumulativeBid > 0 && (
+                                <span className="flex items-center gap-1.5 text-orange-700 dark:text-orange-200 bg-orange-50 dark:bg-orange-900/30 px-2.5 py-1 rounded-full font-semibold">
+                                    <Target size={14} />
+                                    {userCumulativeBid}
+                                </span>
+                            )}
+                        </div>
                         <div className="flex flex-col items-center gap-6">
                             <QuestionDisplay round={round} />
 

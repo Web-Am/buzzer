@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ChevronDown, HelpCircle, Coins, Calendar, Trash2 } from 'lucide-react';
 import { Room, Participant } from "@/app/types";
 import { Modal } from '../ui/Modal';
@@ -36,6 +36,9 @@ export function ParticipantsTable({ room }: Props) {
     const [roundsExpanded, setRoundsExpanded] = useState(false);
     const [swiped, setSwiped] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [swipedRoundIndex, setSwipedRoundIndex] = useState<number | null>(null);
+    const [roundToDelete, setRoundToDelete] = useState<{ index: number; round: Participant['roundsWon'][number] } | null>(null);
+    const [showDeleteRoundConfirm, setShowDeleteRoundConfirm] = useState(false);
     const participants = Object.entries(room.participants ?? {});
 
     const liveSelected = selectedParticipant
@@ -43,8 +46,10 @@ export function ParticipantsTable({ room }: Props) {
         : null;
     const isOnlineSelected = liveSelected?.isOnline === true;
     const displayedIsOnline = liveSelected ? liveSelected.isOnline : (selectedParticipant?.data.isOnline ?? false);
+    const viewData = liveSelected ?? selectedParticipant?.data ?? null;
 
     const handleResetRounds = async () => {
+        if (role !== 'master') return;
         if (!roomCode || !selectedParticipant) return;
         await update(ref(db, `rooms/${roomCode}/participants/${selectedParticipant.key}`), {
             roundsWon: [],
@@ -55,6 +60,7 @@ export function ParticipantsTable({ room }: Props) {
     };
 
     const handleDeleteParticipant = async () => {
+        if (role !== 'master') return;
         if (!roomCode || !selectedParticipant) return;
         if (liveSelected?.isOnline) return;
 
@@ -74,6 +80,26 @@ export function ParticipantsTable({ room }: Props) {
         }
     };
 
+    const handleDeleteRound = async () => {
+        if (role !== 'master') return;
+        if (!roomCode || !selectedParticipant || !roundToDelete) return;
+
+        try {
+            const { key } = selectedParticipant;
+            const roundsWon = (room.participants?.[key]?.roundsWon ?? selectedParticipant.data.roundsWon ?? []).filter(
+                (_, idx) => idx !== roundToDelete.index
+            );
+            const pointsUsed = roundsWon.reduce((sum, r) => sum + (r.pointsAwarded || 0), 0);
+            await update(participantRef(roomCode, key), { roundsWon, pointsUsed });
+            setShowDeleteRoundConfirm(false);
+            setRoundToDelete(null);
+            setSwipedRoundIndex(null);
+        } catch (err) {
+            console.error('Errore eliminazione round:', err);
+            alert('Errore durante l\'eliminazione del round.');
+        }
+    };
+
     return (
         <div>
             <h3 className="text-lg font-semibold mb-2">Partecipanti</h3>
@@ -88,14 +114,15 @@ export function ParticipantsTable({ room }: Props) {
                             </tr>
                         </thead>
                     <tbody>
-                        {participants.map(([key, p]) => {
+{participants.map(([key, p]) => {
                             const used = p.pointsUsed ?? 0;
                             const avail = p.pointsTotal - used;
                             const isOnline = p.isOnline;
                             return (
-                                <tr key={key} className="border-t cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" onClick={() => {
+<tr key={key} className="border-t cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" onClick={() => {
                                     setSelectedParticipant({ key, data: p });
                                     setSwiped(false);
+                                    setSwipedRoundIndex(null);
                                 }}>
                                     <td className="px-3 py-2">{p.name}</td>
                                     <td className="px-3 py-2 text-center">
@@ -136,10 +163,11 @@ export function ParticipantsTable({ room }: Props) {
                 onClose={() => {
                     setSelectedParticipant(null);
                     setSwiped(false);
+                    setSwipedRoundIndex(null);
                 }}
                 title={`Dettagli: ${selectedParticipant?.data.name}`}
                 footer={
-                    role === 'master' && selectedParticipant && !selectedParticipant.data.isViewer && (
+                    role === 'master' && selectedParticipant && viewData && !viewData.isViewer && (
                         <Button
                             variant="ghost"
                             onClick={() => setShowResetConfirm(true)}
@@ -154,65 +182,55 @@ export function ParticipantsTable({ room }: Props) {
                     <div className="space-y-4">
                         {/* Email + connection dot (master: swipe left per eliminare) */}
                         {role === 'master' ? (
-                            <motion.div
-                                drag="x"
-                                dragConstraints={{ left: 0, right: 0 }}
-                                dragElastic={0.2}
-                                onDragEnd={(_, info) => {
-                                    if (info.offset.x < -80) {
-                                        setSwiped(true);
-                                    } else if (info.offset.x > 80) {
-                                        setSwiped(false);
-                                    }
-                                }}
-                                animate={{ x: 0 }}
-                                className="flex items-center justify-between touch-none cursor-grab active:cursor-grabbing"
-                            >
-                                <AnimatePresence mode="wait" initial={false}>
-                                    {swiped ? (
-                                        <motion.div
-                                            key="delete"
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.15 }}
-                                            className="w-full"
-                                        >
-                                            <button
-                                                type="button"
-                                                disabled={isOnlineSelected}
-                                                onClick={() => setShowDeleteConfirm(true)}
-                                                className={`flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                                                    isOnlineSelected
-                                                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                                        : 'bg-red-600 text-white hover:bg-red-700'
-                                                }`}
-                                            >
-                                                <Trash2 size={16} />
-                                                {isOnlineSelected ? 'Utente connesso' : 'ELIMINA'}
-                                            </button>
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div
-                                            key="email"
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.15 }}
-                                            className="w-full"
-                                        >
-                                            <ParticipantEmailRow
-                                                isOnline={displayedIsOnline}
-                                                email={selectedParticipant.data.email}
-                                            />
-                                        </motion.div>
+                            <div className="relative overflow-hidden rounded-lg">
+                                {/* Pulsante eliminazione (strato sotto, fisso a destra) */}
+                                <button
+                                    type="button"
+                                    disabled={isOnlineSelected}
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    className={`absolute inset-y-0 right-0 flex w-28 items-center justify-center gap-2 text-sm font-semibold transition-colors ${
+                                        isOnlineSelected
+                                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                            : 'bg-red-600 text-white hover:bg-red-700'
+                                    }`}
+                                >
+                                    <Trash2 size={16} />
+                                    {isOnlineSelected ? 'Connesso' : 'ELIMINA'}
+                                </button>
+
+                                {/* Contenuto email (strato sopra, scorre a sinistra) */}
+                                <motion.div
+                                    drag="x"
+                                    dragConstraints={{ left: -112, right: 0 }}
+                                    dragElastic={0.15}
+                                    dragMomentum={false}
+                                    onDragEnd={(_, info) => {
+                                        if (info.offset.x < -30 || info.velocity.x < -400) {
+                                            setSwiped(true);
+                                        } else if (info.offset.x > 30 || info.velocity.x > 400) {
+                                            setSwiped(false);
+                                        }
+                                    }}
+                                    animate={{ x: swiped ? -112 : 0 }}
+                                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                    className="relative z-10 bg-white dark:bg-gray-800 px-3 py-2 cursor-grab active:cursor-grabbing"
+                                >
+                                    <ParticipantEmailRow
+                                        isOnline={displayedIsOnline}
+                                        email={viewData?.email ?? ''}
+                                    />
+                                    {!swiped && (
+                                        <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
+                                            <ChevronDown className="w-3 h-3 rotate-90" />
+                                            scorri a sinistra per eliminare
+                                        </span>
                                     )}
-                                </AnimatePresence>
-                            </motion.div>
+                                </motion.div>
+                            </div>
                         ) : (
                             <ParticipantEmailRow
                                 isOnline={displayedIsOnline}
-                                email={selectedParticipant.data.email}
+                                email={viewData?.email ?? ''}
                             />
                         )}
 
@@ -223,13 +241,13 @@ export function ParticipantsTable({ room }: Props) {
                             <div>
                                 <p className="text-xs text-gray-500 dark:text-gray-300 uppercase">Crediti</p>
                                 <p className="font-semibold text-sm">
-                                    {selectedParticipant.data.pointsTotal - (selectedParticipant.data.pointsUsed || 0)} / {selectedParticipant.data.pointsTotal}
+                                    {viewData ? (viewData.pointsTotal - (viewData.pointsUsed || 0)) : 0} / {viewData?.pointsTotal ?? 0}
                                 </p>
                             </div>
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 dark:text-gray-300 uppercase">Ruolo</p>
                                 <p className="font-semibold text-sm">
-                                    {selectedParticipant.data.isViewer ? (
+                                    {viewData?.isViewer ? (
                                         <span className="text-gray-500 dark:text-gray-300">Spettatore</span>
                                     ) : (
                                         <span className="text-blue-600 dark:text-blue-400">Giocatore</span>
@@ -249,7 +267,7 @@ export function ParticipantsTable({ room }: Props) {
                                 <span className="font-semibold text-sm">🏆 Round Vinti</span>
                                 <span className="flex items-center gap-2">
                                     <span className="inline-flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-700 dark:text-gray-300 min-w-[1.5rem]">
-                                        {selectedParticipant.data.roundsWon?.length ?? 0}
+                                        {viewData?.roundsWon?.length ?? 0}
                                     </span>
                                     <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
                                         roundsExpanded ? 'rotate-180' : ''
@@ -258,25 +276,74 @@ export function ParticipantsTable({ room }: Props) {
                             </button>
                             {roundsExpanded && (
                                 <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
-                                    {(!selectedParticipant.data.roundsWon || selectedParticipant.data.roundsWon.length === 0) ? (
+                                    {(viewData?.roundsWon && viewData.roundsWon.length === 0) ? (
                                         <p className="text-xs text-gray-500 dark:text-gray-300 italic">Nessun round vinto ancora</p>
                                     ) : (
-                                        selectedParticipant.data.roundsWon.map((round, idx) => (
-                                            <div key={idx} className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-purple-50 dark:to-purple-900/30 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
-                                                <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">
-                                                    <HelpCircle size={16} className="inline mr-1 text-blue-500 -mt-0.5" />
-                                                    {round.questionText}
-                                                </p>
-                                                <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                                                    <Coins size={14} className="inline mr-1 text-orange-500 -mt-0.5" />
-                                                    Spesi: <span className="font-bold text-orange-600">{round.pointsAwarded}</span> crediti
-                                                </p>
-                                                <p className="text-xs text-gray-400 dark:text-gray-300 mt-1">
-                                                    <Calendar size={14} className="inline mr-1 text-gray-400 -mt-0.5" />
-                                                    {new Date(round.timestamp).toLocaleString('it-IT')}
-                                                </p>
-                                            </div>
-                                        ))
+                                        viewData?.roundsWon?.map((round, idx) => {
+                                            const cardContent = (
+                                                <>
+                                                    <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">
+                                                        <HelpCircle size={16} className="inline mr-1 text-blue-500 -mt-0.5" />
+                                                        {round.questionText}
+                                                    </p>
+                                                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                                                        <Coins size={14} className="inline mr-1 text-orange-500 -mt-0.5" />
+                                                        Spesi: <span className="font-bold text-orange-600">{round.pointsAwarded}</span> crediti
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 dark:text-gray-300 mt-1">
+                                                        <Calendar size={14} className="inline mr-1 text-gray-400 -mt-0.5" />
+                                                        {new Date(round.timestamp).toLocaleString('it-IT')}
+                                                    </p>
+                                                </>
+                                            );
+
+                                            if (role !== 'master') {
+                                                return (
+                                                    <div key={idx} className="bg-gradient-to-r from-blue-50 dark:from-blue-900 to-purple-50 dark:to-purple-900 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+                                                        {cardContent}
+                                                    </div>
+                                                );
+                                            }
+
+                                            return (
+                                                <div key={idx} className="relative overflow-hidden rounded-lg">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setRoundToDelete({ index: idx, round });
+                                                            setShowDeleteRoundConfirm(true);
+                                                        }}
+                                                        className="absolute inset-y-0 right-0 flex w-24 items-center justify-center gap-2 text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                        ELIMINA
+                                                    </button>
+
+                                                    <motion.div
+                                                        drag="x"
+                                                        dragConstraints={{ left: -96, right: 0 }}
+                                                        dragElastic={0.15}
+                                                        dragMomentum={false}
+                                                        onDragEnd={(_, info) => {
+                                                            if (swipedRoundIndex === idx) {
+                                                                if (info.offset.x > 30 || info.velocity.x > 400) {
+                                                                    setSwipedRoundIndex(null);
+                                                                }
+                                                            } else {
+                                                                if (info.offset.x < -30 || info.velocity.x < -400) {
+                                                                    setSwipedRoundIndex(idx);
+                                                                }
+                                                            }
+                                                        }}
+                                                        animate={{ x: swipedRoundIndex === idx ? -96 : 0 }}
+                                                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                                        className="relative z-10 bg-gradient-to-r from-blue-50 dark:from-blue-900 to-purple-50 dark:to-purple-900 rounded-lg p-3 border border-blue-100 dark:border-blue-800 cursor-grab active:cursor-grabbing"
+                                                    >
+                                                        {cardContent}
+                                                    </motion.div>
+                                                </div>
+                                            );
+                                        })
                                     )}
                                 </div>
                             )}
@@ -303,6 +370,33 @@ export function ParticipantsTable({ room }: Props) {
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">
                     Questa azione cancellerà la cronologia delle vittorie e ripristinerà tutti i crediti spesi.
+                </p>
+            </Modal>
+
+            {/* Modal conferma eliminazione round */}
+            <Modal
+                open={showDeleteRoundConfirm}
+                onClose={() => setShowDeleteRoundConfirm(false)}
+                title="Eliminare round vinto?"
+                footer={
+                    <>
+                        <Button variant="ghost" onClick={() => setShowDeleteRoundConfirm(false)}>Annulla</Button>
+                        <Button
+                            onClick={handleDeleteRound}
+                            className="bg-red-600 text-white hover:bg-red-700"
+                        >
+                            Conferma Eliminazione
+                        </Button>
+                    </>
+                }
+            >
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Vuoi eliminare il round vinto{' '}
+                    <strong className="text-gray-900 dark:text-gray-100">"{roundToDelete?.round.questionText}"</strong> di{' '}
+                    <strong className="text-gray-900 dark:text-gray-100">{selectedParticipant?.data.name}</strong>?
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">
+                    I crediti spesi ({roundToDelete?.round.pointsAwarded}) verranno rimborsati.
                 </p>
             </Modal>
 

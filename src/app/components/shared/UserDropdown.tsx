@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { desanitizeEmailKey } from '@/app/lib/firebase-utils';
-import { Trash2, LogOut, ChevronDown } from 'lucide-react';
+import { Trash2, LogOut, ChevronDown, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/app/hooks/useTheme';
 
 interface UserDropdownProps {
     name: string;
@@ -13,6 +14,7 @@ interface UserDropdownProps {
 
 export function UserDropdown({ name, email, onLogout, onDelete }: UserDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const { theme, toggleTheme } = useTheme();
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -53,6 +55,17 @@ export function UserDropdown({ name, email, onLogout, onDelete }: UserDropdownPr
                         </div>
                     </div>
                     <div className="p-1.5">
+                        <button
+                            onClick={() => {
+                                setIsOpen(false);
+                                toggleTheme();
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                            {theme === 'light' ? 'Tema scuro' : 'Tema chiaro'}
+                        </button>
+                        <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
                         {onDelete && (
                             <>
                                 <button

@@ -24,8 +24,8 @@ export function useRoom(roomCode: string | null) {
                     if (data.participants) {
                         Object.keys(data.participants).forEach((key) => {
                             const p = data.participants[key] as Participant;
-                            // Ricalcola pointsUsed basato su roundsWon
-                            if (p.roundsWon && p.roundsWon.length > 0) {
+                            // Ricalcola pointsUsed basato su roundsWon (anche se vuoto)
+                            if (p.roundsWon) {
                                 const totalSpent = p.roundsWon.reduce((sum, round) => {
                                     // Ogni round rappresenta una spesa (pointsAwarded è ciò che hai speso per vincere)
                                     return sum + (round.pointsAwarded || 0);

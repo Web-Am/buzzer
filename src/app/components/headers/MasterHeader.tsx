@@ -4,7 +4,6 @@ import Image from 'next/image';
 import Link from "next/link";
 import { RoomCodeDisplay } from "@/app/components/shared/RoomCodeDisplay";
 import { UserDropdown } from "@/app/components/shared/UserDropdown";
-import { ThemeSwitch } from "@/app/components/ui/ThemeSwitch";
 
 interface Props {
     roomCode: string;
@@ -30,7 +29,6 @@ export default function MasterHeader({ roomCode, roomName, userName, userEmail, 
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                         <RoomCodeDisplay roomCode={roomCode} />
-                        <ThemeSwitch />
                         <UserDropdown name={userName} email={userEmail} onLogout={onLogout} onDelete={onDeleteRoom} />
                     </div>
                 </div>
