@@ -162,7 +162,7 @@ export function RoundControl({ roomCode, room }: Props) {
             <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Nuovo Round</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-300">
-                    Scrivi la domanda (solitamente un nome) e avvia il round.
+                    Scrivi la domanda e avvia il round.
                     I partecipanti hanno {room.settings.timerCountdown / 1000} secondi per votare.
                 </p>
                 <Input

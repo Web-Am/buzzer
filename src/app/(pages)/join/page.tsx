@@ -92,6 +92,7 @@ export default function JoinPage() {
                     localStorage.setItem('fantaLoginData', JSON.stringify({
                         name: formData.name,
                         email: formData.email,
+                        roomName: room.name,
                         roomCode: rc,
                     }));
                     localStorage.setItem(`userEmail_${rc}`, formData.email);
@@ -143,6 +144,7 @@ export default function JoinPage() {
                 localStorage.setItem('fantaLoginData', JSON.stringify({
                     name: formData.name,
                     email: formData.email,
+                    roomName: room.name,
                     roomCode: rc,
                 }));
                 localStorage.setItem(`userEmail_${rc}`, formData.email);

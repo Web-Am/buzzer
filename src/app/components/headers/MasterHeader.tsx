@@ -22,8 +22,15 @@ export default function MasterHeader({ roomCode, roomName, userName, userEmail, 
                     <div className="flex items-center gap-4 min-w-0">
                         <Link href="/" className="flex items-center gap-2.5 shrink-0">
                             <Image src="/logo.png" alt="Fanta Buzzer" width={32} height={32} className="rounded-lg" />
-                            <span className="text-lg font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-                                Fanta Buzzer
+                            <span className="flex flex-col leading-tight">
+                                <span className="text-lg font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+                                    Fanta Buzzer
+                                </span>
+                                {roomName && (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
+                                        {roomName}
+                                    </span>
+                                )}
                             </span>
                         </Link>
                     </div>

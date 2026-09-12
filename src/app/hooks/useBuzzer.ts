@@ -11,7 +11,7 @@ export function useBuzzer(roomCode: string) {
         async (increment: number = 1) => {
             if (!userKey || !room?.currentRound) return;
 
-            if (![1, 5, 20].includes(increment)) {
+            if (![1, 5, 10].includes(increment)) {
                 alert('Incremento non valido');
                 return;
             }
@@ -30,7 +30,7 @@ export function useBuzzer(roomCode: string) {
                     const winner = getCurrentWinner(presses);
 
                     if (winner && winner.userId === userKey) {
-                        throw new Error('Sei già il vincitore attuale');
+                        throw new Error('Stai vincendo');
                     }
 
                     const participant = room.participants?.[userKey];
@@ -41,27 +41,14 @@ export function useBuzzer(roomCode: string) {
                     const pointsAvailable = participant.pointsTotal - (participant.pointsUsed || 0);
                     const userCumulativeBid = getCumulativeBid(presses, userKey);
 
-                    let newCumulativeBid: number;
-                    let cost: number;
+                    const winnerCumulativeBid = winner?.cumulativeBid ?? 0;
+                    const minimumToOutbid = winnerCumulativeBid - userCumulativeBid + increment;
+                    const remainingBudget = pointsAvailable - userCumulativeBid;
+                    const newCumulativeBid = userCumulativeBid + minimumToOutbid;
+                    const cost = minimumToOutbid;
 
-                    if (userCumulativeBid === 0) {
-                        cost = increment;
-                        newCumulativeBid = increment;
-                    } else {
-                        const winnerCumulativeBid = winner?.cumulativeBid ?? 0;
-                        const minimumToOutbid = winnerCumulativeBid - userCumulativeBid + increment;
-                        const remainingBudget = pointsAvailable - userCumulativeBid;
-
-                        if (remainingBudget < minimumToOutbid) {
-                            throw new Error(`Punti insufficienti. Servono ${minimumToOutbid}, ne hai ${remainingBudget}`);
-                        }
-
-                        cost = minimumToOutbid;
-                        newCumulativeBid = userCumulativeBid + minimumToOutbid;
-                    }
-
-                    if (cost > pointsAvailable) {
-                        throw new Error(`Punti insufficienti. Servono ${cost}, ne hai ${pointsAvailable}`);
+                    if (remainingBudget < minimumToOutbid) {
+                        throw new Error(`Punti insufficienti. Servono ${minimumToOutbid}, ne hai ${remainingBudget}`);
                     }
 
                     const newPress = {
@@ -110,7 +97,7 @@ export function useBuzzer(roomCode: string) {
                     const winner = getCurrentWinner(presses);
 
                     if (winner && winner.userId === userKey) {
-                        throw new Error('Sei già il vincitore attuale');
+                        throw new Error('Stai vincendo');
                     }
 
                     const participant = room.participants?.[userKey];
@@ -125,28 +112,24 @@ export function useBuzzer(roomCode: string) {
                         throw new Error('Inserisci un valore positivo');
                     }
 
-                    let newCumulativeBid: number;
-
-                    if (userCumulativeBid === 0) {
-                        newCumulativeBid = amount;
-                    } else {
-                        const winnerCumulativeBid = winner?.cumulativeBid ?? 0;
-                        const minimumToOutbid = winnerCumulativeBid - userCumulativeBid + 1;
-                        if (amount < minimumToOutbid) {
-                            throw new Error(`Devi puntare almeno ${minimumToOutbid} punti per superare il vincitore attuale`);
-                        }
-                        newCumulativeBid = userCumulativeBid + amount;
+                    const winnerCumulativeBid = winner?.cumulativeBid ?? 0;
+                    const minimumTotal = winnerCumulativeBid + 1;
+                    if (amount < minimumTotal) {
+                        throw new Error(`Devi puntare almeno ${minimumTotal} crediti per superare il vincitore`);
                     }
 
-                    if (newCumulativeBid > pointsAvailable + userCumulativeBid) {
+                    if (amount > pointsAvailable) {
                         throw new Error(`Punti insufficienti. Hai massimo ${pointsAvailable} punti disponibili`);
                     }
+
+                    const newCumulativeBid = amount;
+                    const cost = amount - userCumulativeBid;
 
                     const newPress = {
                         userId: userKey,
                         value: amount,
                         cumulativeBid: newCumulativeBid,
-                        pointsUsed: amount,
+                        pointsUsed: cost,
                         serverTs: Date.now(),
                         targetText: `custom`
                     };
@@ -161,7 +144,7 @@ export function useBuzzer(roomCode: string) {
                     };
                 });
 
-                console.log(`✅ Buzz personalizzato: ${amount}, cumulativo: ${getCumulativeBid(room.currentRound?.presses, userKey) + amount}`);
+                console.log(`✅ Buzz personalizzato: totale ${amount}`);
             } catch (error) {
                 console.error('Errore durante il buzz:', error);
                 alert(error instanceof Error ? error.message : 'Errore durante il buzz');

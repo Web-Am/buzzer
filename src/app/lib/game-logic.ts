@@ -66,9 +66,7 @@ export function calculateBidCost(
     winnerCumulativeBid: number,
     increment: number
 ): number {
-    const minimumToOutbid = userCumulativeBid === 0
-        ? increment // first bid: use the increment directly
-        : (winnerCumulativeBid - userCumulativeBid) + increment;
+    const minimumToOutbid = (winnerCumulativeBid - userCumulativeBid) + increment;
 
     return Math.max(minimumToOutbid, 1);
 }
@@ -77,8 +75,7 @@ export function getMinimumToOutbid(
     userCumulativeBid: number,
     winnerCumulativeBid: number
 ): number {
-    if (userCumulativeBid === 0) return 1;
-    return winnerCumulativeBid - userCumulativeBid + 1;
+    return Math.max(winnerCumulativeBid - userCumulativeBid + 1, 1);
 }
 
 export function canUserBid(params: {
@@ -106,7 +103,7 @@ export function canUserBid(params: {
     if (winner && winner.userId === userKey) {
         return {
             canPress: false,
-            reason: 'Sei già il vincitore attuale',
+            reason: 'Stai vincendo',
             requiredPoints: 0
         };
     }
@@ -115,19 +112,6 @@ export function canUserBid(params: {
     const winnerCumulativeBid = winner?.cumulativeBid ?? 0;
 
     const pointsAvailable = participant.pointsTotal - participant.pointsUsed;
-
-    if (userCumulativeBid === 0) {
-        // First bid: cost = increment
-        const cost = increment;
-        if (pointsAvailable < cost) {
-            return {
-                canPress: false,
-                reason: `Servono ${cost} punti (ne hai ${pointsAvailable})`,
-                requiredPoints: cost
-            };
-        }
-        return { canPress: true, requiredPoints: cost };
-    }
 
     const remainingBudget = pointsAvailable - userCumulativeBid;
     const minimumToOutbid = winnerCumulativeBid - userCumulativeBid + increment;
