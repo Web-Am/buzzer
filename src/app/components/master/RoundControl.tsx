@@ -185,6 +185,33 @@ export function RoundControl({ roomCode, room }: Props) {
                 {currentRound.questionText}
             </p>
 
+            {currentRound.status === 'FINISHED' && (() => {
+                const fallback = getCurrentWinner(currentRound.presses ?? {});
+                const winnerId = currentRound.winner ?? fallback?.userId ?? null;
+                const winnerPoints = currentRound.winnerPoints ?? fallback?.cumulativeBid ?? 0;
+
+                if (!winnerId) {
+                    return (
+                        <div className="rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Nessuno ha puntato in questo round.
+                            </p>
+                        </div>
+                    );
+                }
+
+                const name = room.participants?.[winnerId]?.name || 'Sconosciuto';
+                return (
+                    <div className="rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 px-4 py-2">
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                            🏆 Vincitore: <span className="font-semibold">{name}</span>
+                            {' '}con <span className="font-bold">{winnerPoints}</span>{' '}
+                            {winnerPoints === 1 ? 'credito' : 'crediti'}
+                        </p>
+                    </div>
+                );
+            })()}
+
             {currentRound.status === 'IN_PROGRESS' && (() => {
                 const winner = getCurrentWinner(currentRound.presses ?? {});
                 if (!winner) return null;

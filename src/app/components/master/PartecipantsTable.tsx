@@ -34,7 +34,6 @@ export function ParticipantsTable({ room }: Props) {
     const [selectedParticipant, setSelectedParticipant] = useState<{ key: string; data: Participant } | null>(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [roundsExpanded, setRoundsExpanded] = useState(false);
-    const [swiped, setSwiped] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [swipedRoundIndex, setSwipedRoundIndex] = useState<number | null>(null);
     const [roundToDelete, setRoundToDelete] = useState<{ index: number; round: Participant['roundsWon'][number] } | null>(null);
@@ -73,7 +72,6 @@ export function ParticipantsTable({ room }: Props) {
             }
             setShowDeleteConfirm(false);
             setSelectedParticipant(null);
-            setSwiped(false);
         } catch (err) {
             console.error('Errore eliminazione partecipante:', err);
             alert('Errore durante l\'eliminazione del partecipante.');
@@ -119,9 +117,8 @@ export function ParticipantsTable({ room }: Props) {
                             const avail = p.pointsTotal - used;
                             const isOnline = p.isOnline;
                             return (
-<tr key={key} className="border-t cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" onClick={() => {
+                                <tr key={key} className="border-t cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" onClick={() => {
                                     setSelectedParticipant({ key, data: p });
-                                    setSwiped(false);
                                     setSwipedRoundIndex(null);
                                 }}>
                                     <td className="px-3 py-2">{p.name}</td>
@@ -162,10 +159,26 @@ export function ParticipantsTable({ room }: Props) {
                 open={!!selectedParticipant}
                 onClose={() => {
                     setSelectedParticipant(null);
-                    setSwiped(false);
                     setSwipedRoundIndex(null);
                 }}
                 title={`Dettagli: ${selectedParticipant?.data.name}`}
+                headerAction={
+                    role === 'master' && selectedParticipant && viewData && !viewData.isViewer && (
+                        <button
+                            type="button"
+                            disabled={isOnlineSelected}
+                            onClick={() => setShowDeleteConfirm(true)}
+                            title={isOnlineSelected ? 'Impossibile eliminare: partecipante connesso' : 'Elimina partecipante'}
+                            className={`rounded-full px-2.5 py-1 text-sm font-semibold transition-colors ${
+                                isOnlineSelected
+                                    ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                    : 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30'
+                            }`}
+                        >
+                            Rimuovi
+                        </button>
+                    )
+                }
                 footer={
                     role === 'master' && selectedParticipant && viewData && !viewData.isViewer && (
                         <Button
@@ -180,59 +193,11 @@ export function ParticipantsTable({ room }: Props) {
             >
                     {selectedParticipant && (
                     <div className="space-y-4">
-                        {/* Email + connection dot (master: swipe left per eliminare) */}
-                        {role === 'master' ? (
-                            <div className="relative overflow-hidden rounded-lg">
-                                {/* Pulsante eliminazione (strato sotto, fisso a destra) */}
-                                <button
-                                    type="button"
-                                    disabled={isOnlineSelected}
-                                    onClick={() => setShowDeleteConfirm(true)}
-                                    className={`absolute inset-y-0 right-0 flex w-28 items-center justify-center gap-2 text-sm font-semibold transition-colors ${
-                                        isOnlineSelected
-                                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                            : 'bg-red-600 text-white hover:bg-red-700'
-                                    }`}
-                                >
-                                    <Trash2 size={16} />
-                                    {isOnlineSelected ? 'Connesso' : 'ELIMINA'}
-                                </button>
-
-                                {/* Contenuto email (strato sopra, scorre a sinistra) */}
-                                <motion.div
-                                    drag="x"
-                                    dragConstraints={{ left: -112, right: 0 }}
-                                    dragElastic={0.15}
-                                    dragMomentum={false}
-                                    onDragEnd={(_, info) => {
-                                        if (info.offset.x < -30 || info.velocity.x < -400) {
-                                            setSwiped(true);
-                                        } else if (info.offset.x > 30 || info.velocity.x > 400) {
-                                            setSwiped(false);
-                                        }
-                                    }}
-                                    animate={{ x: swiped ? -112 : 0 }}
-                                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                                    className="relative z-10 bg-white dark:bg-gray-800 px-3 py-2 cursor-grab active:cursor-grabbing"
-                                >
-                                    <ParticipantEmailRow
-                                        isOnline={displayedIsOnline}
-                                        email={viewData?.email ?? ''}
-                                    />
-                                    {!swiped && (
-                                        <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
-                                            <ChevronDown className="w-3 h-3 rotate-90" />
-                                            scorri a sinistra per eliminare
-                                        </span>
-                                    )}
-                                </motion.div>
-                            </div>
-                        ) : (
-                            <ParticipantEmailRow
-                                isOnline={displayedIsOnline}
-                                email={viewData?.email ?? ''}
-                            />
-                        )}
+                        {/* Email + connection dot */}
+                        <ParticipantEmailRow
+                            isOnline={displayedIsOnline}
+                            email={viewData?.email ?? ''}
+                        />
 
                         <hr />
 
