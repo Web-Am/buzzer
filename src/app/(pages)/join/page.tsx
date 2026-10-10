@@ -15,6 +15,8 @@ import Header from '@/app/components/shared/Header';
 
 type JoinMode = 'play' | 'watch';
 
+const STALE_SESSION_MS = 180_000;
+
 export default function JoinPage() {
     const router = useRouter();
     const { isJoiningRoom, setIsJoiningRoom } = useUIStore();
@@ -120,7 +122,11 @@ export default function JoinPage() {
 
             const transactionResult = await runTransaction(participantNodeRef, (current) => {
                 if (current && current.isOnline === true) {
-                    return undefined;
+                    const lastUpdated = typeof current.updatedAt === 'number' ? current.updatedAt : 0;
+                    const isActive = Date.now() - lastUpdated <= STALE_SESSION_MS;
+                    if (isActive) {
+                        return undefined;
+                    }
                 }
 
                 const preserved = current ?? {};

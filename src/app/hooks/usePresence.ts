@@ -49,6 +49,11 @@ export function usePresence(roomCode: string | null, userKey: string | null) {
             clearInterval(heartbeat);
             document.removeEventListener('visibilitychange', handleVisibility);
             unsubscribe();
+            onDisconnect(presenceRef).cancel().catch(() => {});
+            runTransaction(presenceRef, (current) => {
+                if (current === null) return;
+                return { ...(current as object), isOnline: false, updatedAt: Date.now() };
+            }).catch(() => {});
         };
     }, [roomCode, userKey]);
 }
