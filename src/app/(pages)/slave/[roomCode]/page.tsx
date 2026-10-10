@@ -29,7 +29,8 @@ export default function SlavePage() {
     const { loading } = useRoom(roomCode);
     const { room, setRoomCode, setRole, userKey, setUserKey } = useRoomStore();
 
-    const [customAmount, setCustomAmount] = useState<number>(1);
+    const [customAmount, setCustomAmount] = useState<string>('1');
+    const [customError, setCustomError] = useState<string | null>(null);
 
     const currentRound = room?.currentRound ?? null;
     const { remaining: timerRemaining } = useTimer(
@@ -62,6 +63,14 @@ export default function SlavePage() {
 
     usePresence(roomCode, userKey);
 
+    useEffect(() => {
+        if (loading || !room || !userKey) return;
+        if (userKey === room.masterEmail || !room.participants?.[userKey]) {
+            alert('Sessione non valida per questa stanza.');
+            router.push('/');
+        }
+    }, [loading, room, userKey, router]);
+
     const currentWinnerBid = useMemo(() => {
         const presses = room?.currentRound?.presses;
         const winner = presses ? getCurrentWinner(presses) : null;
@@ -69,7 +78,7 @@ export default function SlavePage() {
     }, [room]);
 
     useEffect(() => {
-        setCustomAmount(Math.max(1, currentWinnerBid + 1));
+        setCustomAmount(String(Math.max(1, currentWinnerBid + 1)));
     }, [currentWinnerBid]);
 
     const gameState = useMemo(() => {
@@ -138,7 +147,24 @@ export default function SlavePage() {
     const bid10Future = winnerCumulativeBid + 10;
     const minimumCustomBid = Math.max(1, winnerCumulativeBid + 1);
     const maxCustomBid = pointsAvail;
-    const customAmountValid = customAmount >= minimumCustomBid && customAmount <= maxCustomBid;
+
+    const handleCustomPress = () => {
+        const amount = Number(customAmount);
+        if (customAmount.trim() === '' || !Number.isFinite(amount) || amount <= 0) {
+            setCustomError('Inserisci un valore valido');
+            return;
+        }
+        if (amount < minimumCustomBid) {
+            setCustomError(`Devi puntare almeno ${minimumCustomBid} crediti`);
+            return;
+        }
+        if (amount > maxCustomBid) {
+            setCustomError(`Punti insufficienti. Hai massimo ${maxCustomBid} crediti`);
+            return;
+        }
+        setCustomError(null);
+        pressCustom(amount);
+    };
 
     return (
         <>
@@ -253,24 +279,25 @@ export default function SlavePage() {
                                     <div className="flex gap-2">
                                         <input
                                             type="number"
-                                            min={minimumCustomBid}
-                                            max={maxCustomBid}
                                             value={customAmount}
-                                            onChange={(e) => setCustomAmount(Math.max(1, Number(e.target.value)))}
+                                            onChange={(e) => {
+                                                setCustomAmount(e.target.value);
+                                                setCustomError(null);
+                                            }}
                                             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                                             disabled={!round || !isActive}
                                         />
                                         <Button
-                                            disabled={!round || !isActive || isWinner || !customAmountValid}
-                                            onClick={() => pressCustom(customAmount)}
+                                            disabled={!round || !isActive || isWinner}
+                                            onClick={handleCustomPress}
                                             size="sm"
                                         >
                                             Punta
                                         </Button>
                                     </div>
-                                    {!isWinner && (
-                                        <p className={`text-xs text-center ${customAmount < minimumCustomBid ? 'text-red-500' : 'text-gray-500 dark:text-gray-300'}`}>
-                                            Devi puntare almeno {minimumCustomBid} crediti per superare il vincitore
+                                    {customError && (
+                                        <p className="text-xs text-center text-red-500">
+                                            {customError}
                                         </p>
                                     )}
                                 </div>

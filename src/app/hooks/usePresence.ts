@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { onDisconnect, onValue, ref, serverTimestamp, update } from 'firebase/database';
+import { onDisconnect, onValue, ref, runTransaction, serverTimestamp } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { participantRef } from '../lib/firebase-utils';
 
@@ -14,11 +14,18 @@ export function usePresence(roomCode: string | null, userKey: string | null) {
         const presenceRef = participantRef(roomCode, userKey);
         const connectedRef = ref(db, '.info/connected');
 
-        const markOnline = () => {
-            update(presenceRef, { isOnline: true, updatedAt: Date.now() }).catch(() => {});
-            onDisconnect(presenceRef)
-                .update({ isOnline: false, updatedAt: serverTimestamp() })
-                .catch(() => {});
+        const touch = (current: unknown) => {
+            if (current === null) return;
+            return { ...(current as object), isOnline: true, updatedAt: Date.now() };
+        };
+
+        const markOnline = async () => {
+            const result = await runTransaction(presenceRef, touch);
+            if (result.committed) {
+                onDisconnect(presenceRef)
+                    .update({ isOnline: false, updatedAt: serverTimestamp() })
+                    .catch(() => {});
+            }
         };
 
         const unsubscribe = onValue(connectedRef, (snapshot) => {
@@ -28,7 +35,7 @@ export function usePresence(roomCode: string | null, userKey: string | null) {
         });
 
         const heartbeat = setInterval(() => {
-            update(presenceRef, { isOnline: true, updatedAt: Date.now() }).catch(() => {});
+            runTransaction(presenceRef, touch).catch(() => {});
         }, HEARTBEAT_INTERVAL_MS);
 
         const handleVisibility = () => {

@@ -40,6 +40,14 @@ export default function SpectatorPage() {
 
     usePresence(roomCode, userKey);
 
+    useEffect(() => {
+        if (loading || !room || !userKey) return;
+        if (userKey === room.masterEmail || !room.participants?.[userKey]) {
+            alert('Sessione non valida per questa stanza.');
+            router.push('/');
+        }
+    }, [loading, room, userKey, router]);
+
     if (loading) return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
             <div className="flex flex-col items-center gap-3">

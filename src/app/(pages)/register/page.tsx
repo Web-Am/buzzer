@@ -6,6 +6,7 @@ import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { Input } from '@/app/components/ui/Input';
 import { useCreateRoom } from '@/app/hooks/useCreateRoom';
+import { setMasterToken } from '@/app/lib/firebase-utils';
 import { validateRoomCreation } from '@/app/lib/game-logic';
 import { useUIStore } from '@/app/store/uiStore';
 import Header from '@/app/components/shared/Header';
@@ -56,12 +57,15 @@ export default function RegisterPage() {
         setErrors({});
         setSubmitError(null);
 
-        const roomCode = await createRoom({ ...formData, timerCountdown: formData.timerCountdown * 1000 });
+        const result = await createRoom({ ...formData, timerCountdown: formData.timerCountdown * 1000 });
 
-        if (!roomCode) {
-            setSubmitError('Errore durante la creazione della stanza. Riprova.');
+        if (!result.ok) {
+            setSubmitError(result.error);
             return;
         }
+
+        const { roomCode, token } = result;
+        setMasterToken(roomCode, token);
 
         localStorage.setItem('fantaLoginData', JSON.stringify({
             name: formData.name,

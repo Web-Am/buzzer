@@ -6,7 +6,7 @@ import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { Input } from '@/app/components/ui/Input';
 import { db } from '@/app/lib/firebase';
-import { participantRef, sanitizeEmailKey } from '@/app/lib/firebase-utils';
+import { getMasterToken, masterRef, participantRef, sanitizeEmailKey } from '@/app/lib/firebase-utils';
 import { validateJoinRoom } from '@/app/lib/game-logic';
 import { useUIStore } from '@/app/store/uiStore';
 import { Room } from '@/app/types';
@@ -84,22 +84,35 @@ export default function JoinPage() {
             const room = snapshot.val() as Room;
             const userKey = sanitizeEmailKey(formData.email);
 
-            const masterRef = ref(db, `masters/${userKey}`);
-            const masterSnap = await get(masterRef);
+            const masterSnap = await get(masterRef(userKey));
 
             if (masterSnap.exists()) {
-                if (typeof window !== 'undefined') {
-                    localStorage.setItem('fantaLoginData', JSON.stringify({
-                        name: formData.name,
-                        email: formData.email,
-                        roomName: room.name,
-                        roomCode: rc,
-                    }));
-                    localStorage.setItem(`userEmail_${rc}`, formData.email);
+                const masterData = masterSnap.val() as { room: string; token?: string };
+
+                // Il check master vale solo se si sta entrando nella PROPRIA stanza.
+                // Se l'email è master di un'altra stanza, qui entra come partecipante normale.
+                if (masterData.room === rc) {
+                    const localToken = getMasterToken(masterData.room);
+
+                    // Rientro legittimo del Master (token salvato in questo browser)
+                    if (masterData.token && localToken === masterData.token) {
+                        if (typeof window !== 'undefined') {
+                            localStorage.setItem('fantaLoginData', JSON.stringify({
+                                name: formData.name,
+                                email: formData.email,
+                                roomName: room.name,
+                                roomCode: masterData.room,
+                            }));
+                            localStorage.setItem(`userEmail_${masterData.room}`, formData.email);
+                        }
+                        setIsJoiningRoom(false);
+                        router.push(`/master/${masterData.room}`);
+                        return;
+                    }
+
+                    setErrorMessage('Questa email è già usata come Master. Se sei il Master rientra dal browser con cui hai creato la stanza, oppure usa un\'altra email.');
+                    return;
                 }
-                setIsJoiningRoom(false);
-                router.push(`/master/${masterSnap.val().room}`);
-                return;
             }
 
             const isViewer = mode === 'watch';

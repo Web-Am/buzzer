@@ -22,6 +22,31 @@ export function desanitizeEmailKey(key: string): string {
         .replace(/_slash_/g, '/');
 }
 
+const MASTER_TOKEN_PREFIX = 'masterToken_';
+
+export function generateMasterToken(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
+export function getMasterToken(roomCode: string): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(MASTER_TOKEN_PREFIX + roomCode);
+}
+
+export function setMasterToken(roomCode: string, token: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(MASTER_TOKEN_PREFIX + roomCode, token);
+}
+
+export function clearMasterToken(roomCode: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(MASTER_TOKEN_PREFIX + roomCode);
+}
+
+export const masterRef = (emailKey: string) => ref(db, `masters/${emailKey}`);
 export const roomRef = (roomCode: string) => ref(db, `rooms/${roomCode}`);
 export const participantsRef = (roomCode: string) =>
     ref(db, `rooms/${roomCode}/participants`);
